@@ -153,8 +153,13 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
 .tl-block{position:absolute; left:calc(var(--tl-gutter) + 8px); right:9px; background:#fff; color:var(--ink); border:1px solid var(--line-soft); border-left:4px solid var(--blue); border-radius:11px; padding:6px 11px; box-shadow:var(--shadow-sm); overflow:hidden; display:flex; flex-direction:column; gap:2px}
 .tl-block.big3{background:var(--blue); color:#fff; border-color:var(--blue); border-left-color:#0c1d78}
 .tl-block.done{opacity:.5}
-.tl-block .b-title{font-weight:700; font-size:13px; white-space:nowrap; text-overflow:ellipsis; overflow:hidden}
-.tl-block .b-meta{font-size:11px; color:var(--ink-3); display:flex; gap:8px; flex-wrap:wrap}
+.tl-block .b-title{font-weight:700; font-size:13px; line-height:1.25; white-space:nowrap; text-overflow:ellipsis; overflow:hidden}
+.tl-block .b-meta{font-size:11px; line-height:1.25; color:var(--ink-3); display:flex; gap:8px; flex-wrap:wrap}
+/* 30분 블록은 제목만 (시간은 왼쪽 게이지에 이미 있음) */
+.tl-block.small{padding:5px 11px; gap:0}
+.tl-block.small .b-meta{display:none}
+.tl-block.small .b-title{font-size:12.5px}
+.tl-block.small .b-actions button{height:18px}
 .tl-block.big3 .b-meta{color:rgba(255,255,255,.85)}
 .tl-block .b-actions{position:absolute; top:5px; right:8px; display:flex; gap:3px}
 .tl-block .b-actions button{border:none; background:rgba(0,0,0,.06); color:var(--ink-2); border-radius:7px; width:22px; height:20px; font-size:12px; line-height:1}
@@ -196,12 +201,15 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
 .calendar{padding:16px 18px 20px}
 .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:5px}
 .cal-dow{text-align:center; font-size:12px; color:var(--ink-3); font-weight:700; padding:4px 0}
-.cal-dow.sun{color:#d11} .cal-dow.sat{color:var(--blue)}
+.cal-dow.sun, .cal-dow.sat{color:#d11}
 .cal-cell{aspect-ratio:1/1; border:1px solid transparent; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:13.5px}
 .cal-cell.pad{color:#cfcfcf}
+.cal-cell.sun, .cal-cell.sat, .cal-cell.holiday{color:#d11}
 .cal-cell:not(.pad):hover{background:var(--bg-soft); cursor:pointer}
 .cal-cell.today{border-color:var(--blue); font-weight:800; color:var(--blue)}
 .cal-cell.selected{background:var(--blue); color:#fff}
+.cal-cell.holiday::after{content:""; width:4px; height:4px; border-radius:50%; background:#d11; margin-top:1px}
+.cal-cell.holiday.selected::after{background:#fff}
 .cal-dot{width:6px; height:6px; border-radius:50%; background:var(--blue)}
 .cal-cell.selected .cal-dot{background:#fff}
 .search-results{max-height:60vh; overflow:auto; padding:10px}

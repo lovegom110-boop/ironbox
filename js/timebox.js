@@ -76,7 +76,7 @@
         const start = Math.max(0, Math.min(SLOTS - 1, t.plannedStart));
         const dur = Math.max(1, Math.min(t.plannedDur || 1, SLOTS - start));
         const block = document.createElement("div");
-        block.className = "tl-block" + (t.isBig3 ? " big3" : "") + (t.done ? " done" : "");
+        block.className = "tl-block" + (t.isBig3 ? " big3" : "") + (t.done ? " done" : "") + (dur === 1 ? " small" : "");
         block.dataset.id = t.id;
         block.style.top = start * ROW_H + 2 + "px";
         block.style.height = dur * ROW_H - 4 + "px";

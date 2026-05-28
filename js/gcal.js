@@ -80,7 +80,10 @@
     });
     if (!r.ok) {
       const txt = await r.text();
-      throw new Error("이벤트 생성 실패 " + r.status + ": " + txt.slice(0, 160));
+      let msg = "이벤트 생성 실패 " + r.status;
+      try { const j = JSON.parse(txt); if (j.error) msg += " — " + (j.error.message || JSON.stringify(j.error).slice(0, 400)); }
+      catch (_) { msg += ": " + txt.slice(0, 400); }
+      throw new Error(msg);
     }
     return r.json();
   }
@@ -91,9 +94,17 @@
     const a = Math.abs(m);
     return `${sign}${String(Math.floor(a / 60)).padStart(2, "0")}:${String(a % 60).padStart(2, "0")}`;
   }
+  // 24:00 → 다음날 00:00 등 자정 경계 안전하게 처리
   function isoFor(dateStr, totalMin, tz) {
-    const hh = Math.floor(totalMin / 60), mm = totalMin % 60;
-    return `${dateStr}T${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:00${tz}`;
+    const [Y, M, D] = dateStr.split("-").map(Number);
+    const dt = new Date(Y, M - 1, D);
+    dt.setMinutes(dt.getMinutes() + totalMin);
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, "0");
+    const d = String(dt.getDate()).padStart(2, "0");
+    const hh = String(dt.getHours()).padStart(2, "0");
+    const mm = String(dt.getMinutes()).padStart(2, "0");
+    return `${y}-${m}-${d}T${hh}:${mm}:00${tz}`;
   }
 
   async function exportDay(day, calId, startHour, slotMin) {
