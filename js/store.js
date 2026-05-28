@@ -1,0 +1,284 @@
+/* =========================================================================
+ * store.js — 데이터 계층
+ *  - 1차 저장: IndexedDB (브라우저 내, 빠름)
+ *  - 영구 백업: 디스크 JSON 파일 (File System Access API, 크롬/엣지)
+ *  - 만능 백업: JSON 내보내기 / 불러오기
+ *  ※ 모든 데이터는 사용자 기기에만 저장됩니다. 서버로 전송하지 않습니다.
+ * ====================================================================== */
+(function (global) {
+  "use strict";
+
+  const DB_NAME = "elonDiary";
+  const DB_VER = 1;
+  const STORE_DAYS = "days";   // keyPath: date ("YYYY-MM-DD")
+  const STORE_META = "meta";   // key-value (파일 핸들, 설정 등)
+  const EXPORT_VERSION = 1;
+
+  let _db = null;
+  let _fileHandle = null;       // 연결된 디스크 파일 핸들
+  let _mirrorTimer = null;
+
+  /* ---------- 유틸 ---------- */
+  function uid() {
+    return "t_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  }
+  function todayStr(d) {
+    d = d || new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+  function emptyDay(date) {
+    return { date: date, wakeNote: "", tasks: [], feedback: "", tomorrowPlan: "", updatedAt: 0 };
+  }
+  function newTask(text) {
+    return {
+      id: uid(),
+      text: (text || "").trim(),
+      category: "",          // 배칭 태그
+      status: "do",          // do | delete | delegate | defer
+      isBig3: false,
+      done: false,
+      plannedStart: null,    // 타임라인 슬롯 인덱스 (null = 미배치)
+      plannedDur: 1,         // 30분 블록 수
+      actualMin: null        // 회고 때 수동 입력
+    };
+  }
+
+  /* ---------- IndexedDB ---------- */
+  function open() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, DB_VER);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE_DAYS)) {
+          db.createObjectStore(STORE_DAYS, { keyPath: "date" });
+        }
+        if (!db.objectStoreNames.contains(STORE_META)) {
+          db.createObjectStore(STORE_META, { keyPath: "key" });
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  function tx(storeName, mode) {
+    return _db.transaction(storeName, mode).objectStore(storeName);
+  }
+  function reqP(request) {
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function metaGet(key) {
+    const row = await reqP(tx(STORE_META, "readonly").get(key));
+    return row ? row.value : undefined;
+  }
+  async function metaSet(key, value) {
+    await reqP(tx(STORE_META, "readwrite").put({ key, value }));
+  }
+
+  /* ---------- 공개 API ---------- */
+  const Store = {
+    todayStr,
+    newTask,
+    emptyDay,
+
+    async init() {
+      _db = await open();
+      // 영구 저장 요청(자동 정리 방지)
+      try {
+        if (navigator.storage && navigator.storage.persist) {
+          await navigator.storage.persist();
+        }
+      } catch (_) {}
+      // 이전에 연결한 디스크 파일 핸들 복원
+      try {
+        const h = await metaGet("fileHandle");
+        if (h) _fileHandle = h;
+      } catch (_) {}
+      return true;
+    },
+
+    async getDay(date) {
+      const row = await reqP(tx(STORE_DAYS, "readonly").get(date));
+      return row || emptyDay(date);
+    },
+
+    async saveDay(day) {
+      day.updatedAt = Date.now();
+      await reqP(tx(STORE_DAYS, "readwrite").put(day));
+      this._scheduleMirror();
+      return day;
+    },
+
+    async getAllDays() {
+      const all = await reqP(tx(STORE_DAYS, "readonly").getAll());
+      all.sort((a, b) => (a.date < b.date ? -1 : 1));
+      return all;
+    },
+
+    /* 해당 월에 '내용이 있는' 날짜 set 반환 (달력 점 표시용) */
+    async getMonthMarks(year, month /* 0-based */) {
+      const all = await this.getAllDays();
+      const prefix = `${year}-${String(month + 1).padStart(2, "0")}`;
+      const marks = {};
+      for (const d of all) {
+        if (d.date.startsWith(prefix) && hasContent(d)) marks[d.date] = true;
+      }
+      return marks;
+    },
+
+    /* 텍스트 검색 (할일/기상메모/회고) */
+    async search(qRaw) {
+      const q = (qRaw || "").trim().toLowerCase();
+      if (!q) return [];
+      const all = await this.getAllDays();
+      const hits = [];
+      for (const d of all) {
+        const inTasks = d.tasks.filter((t) => t.text.toLowerCase().includes(q));
+        const inWake = d.wakeNote && d.wakeNote.toLowerCase().includes(q);
+        const inFb = d.feedback && d.feedback.toLowerCase().includes(q);
+        if (inTasks.length || inWake || inFb) {
+          hits.push({ date: d.date, tasks: inTasks, wake: inWake ? d.wakeNote : "", feedback: inFb ? d.feedback : "" });
+        }
+      }
+      return hits.reverse(); // 최신 우선
+    },
+
+    /* ---------- 내보내기 / 불러오기 ---------- */
+    async exportAll() {
+      const days = await this.getAllDays();
+      return { app: "elon-diary", version: EXPORT_VERSION, exportedAt: new Date().toISOString(), days };
+    },
+
+    async importAll(obj, opts) {
+      opts = opts || {};
+      if (!obj || !Array.isArray(obj.days)) throw new Error("올바른 백업 파일이 아닙니다.");
+      const store = tx(STORE_DAYS, "readwrite");
+      if (!opts.merge) {
+        await reqP(store.clear());
+      }
+      for (const d of obj.days) {
+        if (d && d.date) await reqP(tx(STORE_DAYS, "readwrite").put(normalizeDay(d)));
+      }
+      this._scheduleMirror();
+      return obj.days.length;
+    },
+
+    async downloadExport() {
+      const data = await this.exportAll();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `elon-diary-backup_${todayStr()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    },
+
+    /* <input type=file> 로 불러오기 (모든 브라우저) */
+    async importFromFileInput(file, merge) {
+      const text = await file.text();
+      const obj = JSON.parse(text);
+      return this.importAll(obj, { merge: !!merge });
+    },
+
+    /* ---------- 디스크 파일 자동 저장 (File System Access) ---------- */
+    fileSupported() {
+      return typeof global.showSaveFilePicker === "function";
+    },
+    fileConnected() {
+      return !!_fileHandle;
+    },
+    async fileName() {
+      return _fileHandle ? _fileHandle.name : "";
+    },
+
+    /* 새 파일을 만들어 연결 (자동 저장 시작) */
+    async connectNewFile() {
+      if (!this.fileSupported()) throw new Error("이 브라우저는 파일 자동저장을 지원하지 않습니다. (크롬/엣지 PC 권장)");
+      const handle = await global.showSaveFilePicker({
+        suggestedName: "elon-diary.json",
+        types: [{ description: "JSON", accept: { "application/json": [".json"] } }]
+      });
+      _fileHandle = handle;
+      await metaSet("fileHandle", handle);
+      await this.mirrorToFile(true);
+      return handle.name;
+    },
+
+    /* 기존 파일을 열어 연결 + 그 내용으로 복원 */
+    async openExistingFile() {
+      if (typeof global.showOpenFilePicker !== "function") throw new Error("이 브라우저는 파일 열기를 지원하지 않습니다.");
+      const [handle] = await global.showOpenFilePicker({
+        types: [{ description: "JSON", accept: { "application/json": [".json"] } }]
+      });
+      const file = await handle.getFile();
+      const text = await file.text();
+      let count = 0;
+      if (text.trim()) {
+        const obj = JSON.parse(text);
+        count = await this.importAll(obj, { merge: false });
+      }
+      _fileHandle = handle;
+      await metaSet("fileHandle", handle);
+      return { name: handle.name, count };
+    },
+
+    async _verifyPermission(handle) {
+      const opts = { mode: "readwrite" };
+      if ((await handle.queryPermission(opts)) === "granted") return true;
+      if ((await handle.requestPermission(opts)) === "granted") return true;
+      return false;
+    },
+
+    _scheduleMirror() {
+      if (!_fileHandle) return;
+      clearTimeout(_mirrorTimer);
+      _mirrorTimer = setTimeout(() => this.mirrorToFile().catch(() => {}), 800);
+    },
+
+    /* 현재 전체 데이터를 연결된 파일에 기록 */
+    async mirrorToFile(force) {
+      if (!_fileHandle) return false;
+      try {
+        if (force) {
+          if (!(await this._verifyPermission(_fileHandle))) return false;
+        } else {
+          if ((await _fileHandle.queryPermission({ mode: "readwrite" })) !== "granted") return false;
+        }
+        const data = await this.exportAll();
+        const writable = await _fileHandle.createWritable();
+        await writable.write(JSON.stringify(data, null, 2));
+        await writable.close();
+        return true;
+      } catch (e) {
+        console.warn("파일 저장 실패:", e);
+        return false;
+      }
+    },
+
+    async disconnectFile() {
+      _fileHandle = null;
+      await metaSet("fileHandle", null);
+    }
+  };
+
+  /* ---------- 내부 정규화 ---------- */
+  function normalizeDay(d) {
+    const day = Object.assign(emptyDay(d.date), d);
+    day.tasks = (d.tasks || []).map((t) => Object.assign(newTask(""), t));
+    return day;
+  }
+  function hasContent(d) {
+    return (d.tasks && d.tasks.length) || (d.wakeNote && d.wakeNote.trim()) || (d.feedback && d.feedback.trim());
+  }
+
+  global.Store = Store;
+})(window);

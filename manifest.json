@@ -1,0 +1,17 @@
+{
+  "name": "IRONBOX — 타임박스 플래너",
+  "short_name": "IRONBOX",
+  "description": "기상 메모 · Brain Dump · 4D 정리 · 배칭 · Big3 · 30분 타임박스 · 회고까지, 일론 머스크식 시간관리를 반영한 개인 다이어리. 데이터는 내 기기에만 저장됩니다.",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "orientation": "any",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
