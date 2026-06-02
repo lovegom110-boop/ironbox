@@ -611,5 +611,6 @@
   let toastTimer = null;
   function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2200); }
 
-  document.addEventListener("DOMContentLoaded", init);
+  // 로그인 게이트 통과 후 Auth가 호출한다 (auth.js 참고)
+  window.App = { boot: init };
 })();

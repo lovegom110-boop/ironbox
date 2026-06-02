@@ -237,3 +237,11 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
   .rb .rb-time{width:auto}
   .task{flex-wrap:wrap}
 }
+
+/* 로그인 게이트 */
+.auth-gate{position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; background:#fff}
+.auth-card{text-align:center; padding:40px 28px; max-width:360px; width:90%}
+.auth-brand{font-size:28px; font-weight:800; letter-spacing:-0.02em; margin-bottom:12px}
+.auth-sub{color:#555; font-size:14px; line-height:1.5; margin-bottom:24px}
+.auth-btn{width:100%; height:46px; justify-content:center}
+.auth-error{color:#c00; font-size:13px; margin-top:14px}
