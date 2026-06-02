@@ -1,6 +1,10 @@
 # Vercel
 .vercel
 
+# Firebase
+.firebase/
+firebase-debug.log
+
 # 에디터/OS
 .DS_Store
 Thumbs.db
