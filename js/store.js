@@ -14,9 +14,19 @@
   const STORE_META = "meta";   // key-value (파일 핸들, 설정 등)
   const EXPORT_VERSION = 1;
 
-  let _db = null;
+  let _db = null;               // 로컬 IndexedDB: 이제 fileHandle 저장 용도만 (days는 Firestore)
   let _fileHandle = null;       // 연결된 디스크 파일 핸들
   let _mirrorTimer = null;
+
+  /* ---------- Firestore 참조 (로그인 후에만 호출됨 — currentUser 보장) ---------- */
+  function _uid() {
+    const u = firebase.auth().currentUser;
+    if (!u) throw new Error("로그인이 필요합니다.");
+    return u.uid;
+  }
+  function daysCol() {
+    return firebase.firestore().collection("users").doc(_uid()).collection("days");
+  }
 
   /* ---------- 유틸 ---------- */
   function uid() {
@@ -104,19 +114,20 @@
     },
 
     async getDay(date) {
-      const row = await reqP(tx(STORE_DAYS, "readonly").get(date));
-      return row || emptyDay(date);
+      const snap = await daysCol().doc(date).get();
+      return snap.exists ? snap.data() : emptyDay(date);
     },
 
     async saveDay(day) {
       day.updatedAt = Date.now();
-      await reqP(tx(STORE_DAYS, "readwrite").put(day));
+      await daysCol().doc(day.date).set(day);
       this._scheduleMirror();
       return day;
     },
 
     async getAllDays() {
-      const all = await reqP(tx(STORE_DAYS, "readonly").getAll());
+      const snap = await daysCol().get();
+      const all = snap.docs.map((d) => d.data());
       all.sort((a, b) => (a.date < b.date ? -1 : 1));
       return all;
     },
@@ -158,15 +169,22 @@
     async importAll(obj, opts) {
       opts = opts || {};
       if (!obj || !Array.isArray(obj.days)) throw new Error("올바른 백업 파일이 아닙니다.");
-      const store = tx(STORE_DAYS, "readwrite");
-      if (!opts.merge) {
-        await reqP(store.clear());
+      const days = obj.days.filter((d) => d && d.date);
+      // 안전: 클라우드 데이터를 절대 일괄 삭제하지 않는다. 날짜 키 기준 덮어쓰기(머지)만 한다.
+      let batch = firebase.firestore().batch();
+      let inBatch = 0, total = 0;
+      for (const d of days) {
+        batch.set(daysCol().doc(d.date), normalizeDay(d));
+        inBatch++; total++;
+        if (inBatch === 450) {            // Firestore 배치 한도 500 미만으로 분할
+          await batch.commit();
+          batch = firebase.firestore().batch();
+          inBatch = 0;
+        }
       }
-      for (const d of obj.days) {
-        if (d && d.date) await reqP(tx(STORE_DAYS, "readwrite").put(normalizeDay(d)));
-      }
+      if (inBatch > 0) await batch.commit();
       this._scheduleMirror();
-      return obj.days.length;
+      return total;
     },
 
     async downloadExport() {
