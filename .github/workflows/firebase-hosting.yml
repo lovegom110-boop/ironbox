@@ -1,0 +1,24 @@
+name: Deploy to Firebase Hosting on push (main)
+
+# main에 push될 때마다 GitHub 서버에서 Firebase Hosting으로 자동 배포.
+# 회사망에서 firebase.tools 접속이 막혀도, 배포가 GitHub 인프라에서 실행되어 문제없음.
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to Firebase Hosting (live)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_IRONBOX_3200A }}
+          channelId: live
+          projectId: ironbox-3200a
