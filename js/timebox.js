@@ -89,7 +89,8 @@
         block.innerHTML =
           `<div class="b-title">${t.done ? "✓ " : ""}${t.isBig3 ? "★ " : ""}${esc(t.text)}</div>` +
           `<div class="b-meta"><span>${rangeLabel(start, dur)}</span><span>${durLabel(dur)}</span>` +
-          ((t.tags && t.tags.length ? t.tags : (t.category ? [t.category] : [])).map((g) => `<span>#${esc(g)}</span>`).join("")) + `</div>` +
+          ((t.tags && t.tags.length ? t.tags : (t.category ? [t.category] : [])).map((g) => `<span>#${esc(g)}</span>`).join("")) +
+          (t.note && t.note.trim() ? `<span class="b-note" title="메모 있음">📝</span>` : "") + `</div>` +
           `<div class="b-actions">` +
             `<button data-act="done" title="완료 토글">✓</button>` +
             `<button data-act="unplace" title="타임라인에서 빼기">✕</button>` +

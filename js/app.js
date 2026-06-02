@@ -10,7 +10,7 @@
   const STATUS_ORDER = ["do", "defer", "delegate", "delete"];
   const TAG_PRESETS = ["글쓰기", "이메일", "회의", "연락", "기획", "검토", "잡무", "공부"];
 
-  const state = { date: Store.todayStr(), day: null, filter: "all", selectedId: null, editingTaskId: null, calY: 0, calM: 0 };
+  const state = { date: Store.todayStr(), day: null, filter: "all", selectedId: null, editingTaskId: null, openNoteId: null, calY: 0, calM: 0 };
   let saveTimer = null;
 
   /* ---------------- 초기화 ---------------- */
@@ -41,6 +41,7 @@
     }
     state.day = day;
     state.selectedId = null;
+    state.openNoteId = null;
     render();
     updateSaveStatus();
     if (carriedCount) toast(`어제 미완료 ${carriedCount}개를 오늘로 이월했어요 (어제 체크한 일은 가져오지 않습니다)`);
@@ -131,7 +132,10 @@
     const lines = [];
     lines.push("[업무일지]");
     if (placed.length === 0) lines.push("(타임라인에 배치된 일정 없음)");
-    for (const t of placed) lines.push(`${TimeBox.slotLabel(t.plannedStart)} ${t.text}`);
+    for (const t of placed) {
+      lines.push(`${TimeBox.slotLabel(t.plannedStart)} ${t.text}`);
+      if (t.note && t.note.trim()) t.note.trim().split("\n").forEach((ln) => lines.push("    " + ln));
+    }
     lines.push("");
     lines.push("[느낀점]");
     if (state.day.feedback) lines.push(state.day.feedback);
@@ -278,8 +282,10 @@
   /* ----- 할 일 ----- */
   function renderTasks() {
     const ul = $("#task-list");
-    // mid-edit guard: 할일 인라인 편집 중이면 목록 재구축 X (입력 소실 방지)
+    // mid-edit guard: 할일 인라인 편집/메모 입력 중이면 목록 재구축 X (입력 소실 방지)
     if (state.editingTaskId != null && ul.querySelector("[data-inline-edit]")) return;
+    const openNote = state.openNoteId != null ? ul.querySelector("[data-note-open]") : null;
+    if (openNote && document.activeElement === openNote) return;
     ul.innerHTML = "";
     let list = state.day.tasks.slice();
     if (state.filter === "active") list = list.filter((t) => !t.done);
@@ -316,6 +322,11 @@
     star.title = "Big 3 토글";
     star.onclick = () => toggleBig3(t.id);
 
+    const hasNote = !!(t.note && t.note.trim());
+    const noteBtn = el("button", "note-btn" + (hasNote ? " on" : ""), "📝");
+    noteBtn.title = hasNote ? "메모 보기/편집" : "메모 추가";
+    noteBtn.onclick = () => toggleNote(t.id);
+
     const edit = el("button", "row-btn", "수정");
     edit.title = "수정 (더블클릭으로도 가능)";
     edit.onclick = () => startEditInline(t.id, text, "task-edit");
@@ -323,7 +334,20 @@
     del.title = "삭제";
     del.onclick = () => removeTask(t.id);
 
-    li.append(check, main, star, edit, del);
+    li.append(check, main, star, noteBtn, edit, del);
+
+    if (state.openNoteId === t.id) {
+      const panel = el("div", "task-note");
+      const ta = document.createElement("textarea");
+      ta.className = "task-note-input"; ta.dataset.noteOpen = "1";
+      ta.placeholder = "이 할 일에 대한 세부 메모…";
+      ta.value = t.note || "";
+      ta.addEventListener("input", () => { t.note = ta.value; saveDebounced(); });
+      ta.addEventListener("blur", () => { t.note = ta.value; saveNow(); });
+      panel.appendChild(ta);
+      li.appendChild(panel);
+      setTimeout(() => ta.focus(), 0);
+    }
     return li;
   }
 
@@ -407,6 +431,7 @@
     t.isBig3 = !t.isBig3; saveNow(); render();
   }
   function toggleDone(id) { const t = findTask(id); if (!t) return; t.done = !t.done; saveNow(); render(); }
+  function toggleNote(id) { state.openNoteId = (state.openNoteId === id) ? null : id; render(); }
   function selectTask(id) {
     const t = findTask(id); if (!t) return;
     state.selectedId = (state.selectedId === id) ? null : id; render();

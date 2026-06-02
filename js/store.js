@@ -54,7 +54,8 @@
       done: false,
       plannedStart: null,    // 타임라인 슬롯 인덱스 (null = 미배치)
       plannedDur: 1,         // 30분 블록 수
-      actualMin: null        // 회고 때 수동 입력
+      actualMin: null,       // 회고 때 수동 입력
+      note: ""               // 작업별 세부 메모 (멀티라인)
     };
   }
 
@@ -154,7 +155,7 @@
       const all = await this.getAllDays();
       const hits = [];
       for (const d of all) {
-        const inTasks = d.tasks.filter((t) => t.text.toLowerCase().includes(q));
+        const inTasks = d.tasks.filter((t) => t.text.toLowerCase().includes(q) || (t.note && t.note.toLowerCase().includes(q)));
         const inWake = d.wakeNote && d.wakeNote.toLowerCase().includes(q);
         const inFb = d.feedback && d.feedback.toLowerCase().includes(q);
         if (inTasks.length || inWake || inFb) {

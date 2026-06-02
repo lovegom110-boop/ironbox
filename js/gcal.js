@@ -118,9 +118,12 @@
       const startMin = startHour * 60 + t.plannedStart * slotMin;
       const endMin = startMin + (t.plannedDur || 1) * slotMin;
       const tags = (t.tags && t.tags.length) ? t.tags : (t.category ? [t.category] : []);
+      const descParts = [];
+      if (tags.length) descParts.push(tags.map((x) => "#" + x).join(" "));
+      if (t.note && t.note.trim()) descParts.push(t.note.trim());
       const event = {
         summary: (t.isBig3 ? "★ " : "") + t.text,
-        description: tags.map((x) => "#" + x).join(" "),
+        description: descParts.join("\n\n"),
         start: { dateTime: isoFor(day.date, startMin, tz), timeZone: tzName },
         end: { dateTime: isoFor(day.date, endMin, tz), timeZone: tzName }
       };
