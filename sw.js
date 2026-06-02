@@ -1,14 +1,17 @@
 /* 서비스워커 — 앱 셸 오프라인 캐시 (데이터는 캐시하지 않음, IndexedDB/파일에만 저장) */
-const CACHE = "elon-diary-v9";
+const CACHE = "elon-diary-v10";
 const SHELL = [
   "./",
   "./index.html",
   "./css/style.css",
+  "./js/firebase-config.js",
+  "./js/firebase-init.js",
   "./js/store.js",
   "./js/timebox.js",
   "./js/calendar.js",
   "./js/gcal.js",
   "./js/app.js",
+  "./js/auth.js",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
