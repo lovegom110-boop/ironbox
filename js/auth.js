@@ -65,7 +65,8 @@
   });
 
   window.signOutIronbox = function () {
-    firebase.auth().signOut();
-    location.reload();
+    firebase.auth().signOut()
+      .then(function () { location.reload(); })
+      .catch(function () { location.reload(); });
   };
 })();

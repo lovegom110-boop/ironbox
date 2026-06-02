@@ -10,7 +10,7 @@
   const STATUS_ORDER = ["do", "defer", "delegate", "delete"];
   const TAG_PRESETS = ["글쓰기", "이메일", "회의", "연락", "기획", "검토", "잡무", "공부"];
 
-  const state = { date: Store.todayStr(), day: null, filter: "all", selectedId: null, calY: 0, calM: 0 };
+  const state = { date: Store.todayStr(), day: null, filter: "all", selectedId: null, editingTaskId: null, calY: 0, calM: 0 };
   let saveTimer = null;
 
   /* ---------------- 초기화 ---------------- */
@@ -45,7 +45,7 @@
     updateSaveStatus();
     if (carriedCount) toast(`어제 미완료 ${carriedCount}개를 오늘로 이월했어요 (어제 체크한 일은 가져오지 않습니다)`);
   }
-  function saveNow() { return Store.saveDay(state.day).then(updateSaveStatus); }
+  function saveNow() { return Store.saveDay(state.day).then(updateSaveStatus).catch((e) => { console.error("저장 실패:", e); toast("저장 실패 — 변경이 반영되지 않았어요"); }); }
   function saveDebounced() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 400); }
 
   /* ---------------- 전체 렌더 ---------------- */
@@ -226,6 +226,8 @@
   /* ----- Big 3 ----- */
   function renderBig3() {
     const wrap = $("#big3-list");
+    // mid-edit guard: Big3 인라인 편집 중이면 재구축 X (입력 소실 방지)
+    if (state.editingTaskId != null && wrap.querySelector("[data-inline-edit]")) return;
     const big3 = state.day.tasks.filter((t) => t.isBig3);
     const done = big3.filter((t) => t.done).length;
     $("#big3-count").textContent = big3.length ? `완료 ${done} / ${big3.length}` : "핵심 3가지를 적어보세요 (할 일에도 추가됩니다)";
@@ -276,6 +278,8 @@
   /* ----- 할 일 ----- */
   function renderTasks() {
     const ul = $("#task-list");
+    // mid-edit guard: 할일 인라인 편집 중이면 목록 재구축 X (입력 소실 방지)
+    if (state.editingTaskId != null && ul.querySelector("[data-inline-edit]")) return;
     ul.innerHTML = "";
     let list = state.day.tasks.slice();
     if (state.filter === "active") list = list.filter((t) => !t.done);
@@ -409,14 +413,17 @@
   }
   function startEditInline(id, textEl, cls) {
     const t = findTask(id); if (!t || !textEl) return;
+    state.editingTaskId = id;
     const input = document.createElement("input");
     input.className = cls || "task-edit";
+    input.dataset.inlineEdit = "1";
     input.value = taskToInput(t);   // "제목 #태그…" 형태로 편집 (태그도 함께 수정 가능)
     textEl.replaceWith(input);
     input.focus(); input.select();
     let done = false;
     const commit = (save) => {
       if (done) return; done = true;
+      state.editingTaskId = null;
       if (save) {
         const { text, tags } = parseTags(input.value);
         if (text && (text !== t.text || tags.join(",") !== (t.tags || []).join(","))) {
@@ -606,7 +613,7 @@
     } else if (d.type === "create") {
       const a = Math.min(d.start, d.cur), b = Math.max(d.start, d.cur);
       t.plannedStart = a; t.plannedDur = b - a + 1; state.selectedId = null; saveNow(); render();
-    } else if (d.type === "move") { if (d.ns != null) { t.plannedStart = d.ns; saveNow(); render(); } }
+    } else if (d.type === "move") { if (d.ns != null) { t.plannedStart = d.ns; t.plannedDur = Math.max(1, Math.min(t.plannedDur || 1, TimeBox.SLOTS - d.ns)); saveNow(); render(); } }
     else if (d.type === "resize") { if (d.nd != null) { t.plannedDur = d.nd; saveNow(); render(); } }
   }
 

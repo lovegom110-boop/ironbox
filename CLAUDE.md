@@ -4,7 +4,7 @@
 - **이름**: IRONBOX (아이언맨 + 타임**BOX**)
 - **컨셉**: 일론 머스크식 시간관리를 반영한 **개인 타임박스 다이어리 PWA**
 - **스택**: 바닐라 HTML/CSS/JS + PWA (빌드 도구 없음), Vercel 정적 배포
-- **저장**: IndexedDB(로컬 우선) + File System Access(디스크 파일) + JSON 백업 / **서버 전송 없음**
+- **저장**: Firestore(`users/{uid}/days`, 구글 로그인 후 기기 간 동기화) + 오프라인 퍼시스턴스 / 추가 안전망: File System Access 디스크 파일 + JSON 백업
 - **디자인**: samsung.com 기반 라이트 (화이트 + 블랙 + 삼성 블루 `#1428A0`) + Pretendard
 - **상세**: [`기획.md`](기획.md), [`DESIGN.md`](DESIGN.md), [`README.md`](README.md)
 
@@ -21,6 +21,22 @@ js/{store, timebox, calendar, gcal, app}.js
 # 변경 이력 (날짜별)
 
 > 날짜는 `YYYY-MM-DD` 한국 시각. 수정 시마다 위에서부터 새로 추가.
+
+## 2026-06-02
+
+### Changed
+- **저장 정책 문구를 Firebase 백엔드 전환에 맞게 수정** — 옛 "로컬 전용·서버 전송 없음" 서술을 "본인 구글 계정 Firestore에 저장·동기화(보안규칙으로 본인만 접근) + 디스크 파일/JSON은 추가 안전망"으로 갱신. 반영: `js/store.js` 헤더 주석, `CLAUDE.md` 개요, `README.md`(데이터&프라이버시), `기획.md`(저장 정책·결정 로그), `manifest.json` 설명. ※ `docs/`의 설계·마이그레이션 문서와 과거 날짜 changelog는 *시점 기록*이라 보존.
+- 서비스워커 캐시 `v11 → v12` (아래 JS 수정이 cache-first 전략에서 반영되도록 bump)
+
+### Fixed (전체 버그 감사 후 수정 — 6차원 병렬 탐색·적대적 재검증으로 확정)
+- **[크래시 방지] 손상/구버전 Firestore 문서로 인한 날짜 화면 폭발** — `getDay`/`getAllDays`가 읽은 문서를 `normalizeDay`로 정규화해 `tasks` 배열·필드 기본값을 항상 보장(검색·이월도 함께 견고화). (`js/store.js`)
+- **[표시 누락] `#태그`가 타임라인 블록·Google 캘린더 설명에 안 나오던 문제** — 레거시 `category` 단독 대신 `tags` 우선 폴백으로 통일(인박스 칩과 일치). (`js/timebox.js`, `js/gcal.js`)
+- **[입력 소실] 할일·Big3 인라인 편집 중 다른 동작의 전체 `render()`로 편집 input이 사라지던 문제** — `state.editingTaskId` + `[data-inline-edit]` mid-edit 가드 추가(텍스트필드와 동일 패턴). (`js/app.js`)
+- **[통계 불일치] 큰 블록을 타임라인 맨 아래로 이동 시 `plannedDur` 미클램프** — 이동 커밋 시 `min(dur, SLOTS-start)`로 클램프해 회고 '계획 시간'과 타임라인 표시 일치. (`js/app.js`)
+- **[경쟁] 로그아웃이 `signOut()` 완료 전 `location.reload()`** — `signOut().then(reload)`로 순서 보장. (`js/auth.js`)
+- **[견고성] 저장 실패가 조용히 묻히던 문제** — `firestore().settings({ignoreUndefinedProperties:true})` + `saveNow`에 `.catch`로 실패 토스트 노출. (`js/firebase-init.js`, `js/app.js`)
+- ※ 미완료 **이월은 의도된 동작**이라 유지(멱등 가드·우선순위/★ 보존은 추후 논의로 보류).
+- ※ 보류 항목(별도 처리 필요): Firestore 보안규칙 파일화(`firestore.rules`), SW 갱신 전략(network-first/리로드 유도), 모달 키보드 접근성(Esc/포커스트랩), 데드코드 정리(`renderField`/`startFieldEdit`/`setStatus`).
 
 ## 2026-05-29
 

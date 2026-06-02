@@ -1,9 +1,10 @@
 /* =========================================================================
  * store.js — 데이터 계층
- *  - 1차 저장: IndexedDB (브라우저 내, 빠름)
- *  - 영구 백업: 디스크 JSON 파일 (File System Access API, 크롬/엣지)
- *  - 만능 백업: JSON 내보내기 / 불러오기
- *  ※ 모든 데이터는 사용자 기기에만 저장됩니다. 서버로 전송하지 않습니다.
+ *  - 1차 저장: Firestore (users/{uid}/days) — 구글 로그인 후 기기 간 동기화
+ *  - 오프라인: Firestore 로컬 퍼시스턴스 캐시 (firebase-init.js)
+ *  - 추가 안전망: 디스크 JSON 파일 (File System Access, 크롬/엣지) + JSON 내보내기/불러오기
+ *  - 로컬 IndexedDB는 이제 파일 핸들 등 메타 저장 용도만
+ *  ※ 데이터는 본인 구글 계정의 Firestore에 저장·동기화됩니다 (보안규칙으로 본인만 접근).
  * ====================================================================== */
 (function (global) {
   "use strict";
@@ -116,7 +117,8 @@
 
     async getDay(date) {
       const snap = await daysCol().doc(date).get();
-      return snap.exists ? snap.data() : emptyDay(date);
+      // 항상 정규화: 구버전/수동편집 문서에 tasks 등이 없어도 안전하게 보장
+      return snap.exists ? normalizeDay(Object.assign({ date }, snap.data())) : emptyDay(date);
     },
 
     async saveDay(day) {
@@ -128,7 +130,8 @@
 
     async getAllDays() {
       const snap = await daysCol().get();
-      const all = snap.docs.map((d) => d.data());
+      // 문서 id(date)로 보강 + 정규화 → 검색/이월/내보내기에서 tasks 누락으로 인한 크래시 방지
+      const all = snap.docs.map((d) => normalizeDay(Object.assign({ date: d.id }, d.data())));
       all.sort((a, b) => (a.date < b.date ? -1 : 1));
       return all;
     },

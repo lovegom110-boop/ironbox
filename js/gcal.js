@@ -117,9 +117,10 @@
     for (const t of placed) {
       const startMin = startHour * 60 + t.plannedStart * slotMin;
       const endMin = startMin + (t.plannedDur || 1) * slotMin;
+      const tags = (t.tags && t.tags.length) ? t.tags : (t.category ? [t.category] : []);
       const event = {
         summary: (t.isBig3 ? "★ " : "") + t.text,
-        description: t.category ? "#" + t.category : "",
+        description: tags.map((x) => "#" + x).join(" "),
         start: { dateTime: isoFor(day.date, startMin, tz), timeZone: tzName },
         end: { dateTime: isoFor(day.date, endMin, tz), timeZone: tzName }
       };
