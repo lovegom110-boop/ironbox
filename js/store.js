@@ -46,7 +46,8 @@
     return {
       id: uid(),
       text: (text || "").trim(),
-      category: "",          // 배칭 태그
+      category: "",          // (레거시) 단일 배칭 태그 — 하위호환 유지
+      tags: [],              // #으로 입력하는 다중 태그
       status: "do",          // do | delete | delegate | defer
       isBig3: false,
       done: false,

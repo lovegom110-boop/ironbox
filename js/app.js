@@ -35,7 +35,7 @@
       if (prev) {
         const carry = prev.tasks
           .filter((t) => !t.done)
-          .map((t) => { const n = Store.newTask(t.text); n.category = t.category; return n; });
+          .map((t) => { const n = Store.newTask(t.text); n.category = t.category; n.tags = (t.tags || []).slice(); return n; });
         if (carry.length) { day.tasks = carry; await Store.saveDay(day); carriedCount = carry.length; }
       }
     }
@@ -264,9 +264,10 @@
       wrap.appendChild(row);
     }
   }
-  function addBig3(text) {
-    if (!text.trim()) return;
-    const t = Store.newTask(text); t.isBig3 = true;
+  function addBig3(raw) {
+    const { text, tags } = parseTags(raw);
+    if (!text) return;
+    const t = Store.newTask(text); t.isBig3 = true; t.tags = tags;
     state.day.tasks.push(t);
     saveNow(); render();
     const inp = document.querySelector("#big3-list .big3-input"); if (inp) inp.focus();
@@ -301,9 +302,9 @@
     text.ondblclick = () => startEditInline(t.id, text, "task-edit");
     main.appendChild(text);
     const meta = el("div", "task-meta");
-    const tag = el("button", "tag" + (t.category ? " has" : ""), t.category ? "#" + t.category : "+ 태그");
-    tag.onclick = () => setCategory(t.id);
-    meta.appendChild(tag);
+    const tags = taskTags(t);
+    for (const tg of tags) meta.appendChild(el("span", "tag-chip", "#" + tg));
+    if (!tags.length) meta.appendChild(el("span", "tag-hint", "제목에 #태그 입력"));
     if (t.plannedStart != null) meta.appendChild(el("span", "placed-at", TimeBox.slotLabel(t.plannedStart)));
     main.appendChild(meta);
 
@@ -383,7 +384,12 @@
 
   /* ---------------- 동작 ---------------- */
   function findTask(id) { return state.day.tasks.find((t) => t.id === id); }
-  function addTask(text) { if (!text.trim()) return; state.day.tasks.push(Store.newTask(text)); saveNow(); render(); }
+  function addTask(raw) {
+    const { text, tags } = parseTags(raw);
+    if (!text) return;
+    const t = Store.newTask(text); t.tags = tags;
+    state.day.tasks.push(t); saveNow(); render();
+  }
   function removeTask(id) { state.day.tasks = state.day.tasks.filter((t) => t.id !== id); if (state.selectedId === id) state.selectedId = null; saveNow(); render(); }
   function setStatus(id, status) {
     const t = findTask(id); if (!t) return;
@@ -397,12 +403,6 @@
     t.isBig3 = !t.isBig3; saveNow(); render();
   }
   function toggleDone(id) { const t = findTask(id); if (!t) return; t.done = !t.done; saveNow(); render(); }
-  function setCategory(id) {
-    const t = findTask(id); if (!t) return;
-    const v = window.prompt("태그(배칭) — 같은 태그끼리 묶여요.\n예: " + TAG_PRESETS.join(", "), t.category || "");
-    if (v === null) return;
-    t.category = v.trim(); saveNow(); render();
-  }
   function selectTask(id) {
     const t = findTask(id); if (!t) return;
     state.selectedId = (state.selectedId === id) ? null : id; render();
@@ -411,13 +411,18 @@
     const t = findTask(id); if (!t || !textEl) return;
     const input = document.createElement("input");
     input.className = cls || "task-edit";
-    input.value = t.text;
+    input.value = taskToInput(t);   // "제목 #태그…" 형태로 편집 (태그도 함께 수정 가능)
     textEl.replaceWith(input);
     input.focus(); input.select();
     let done = false;
     const commit = (save) => {
       if (done) return; done = true;
-      if (save) { const v = input.value.trim(); if (v && v !== t.text) { t.text = v; saveNow(); } }
+      if (save) {
+        const { text, tags } = parseTags(input.value);
+        if (text && (text !== t.text || tags.join(",") !== (t.tags || []).join(","))) {
+          t.text = text; t.tags = tags; t.category = ""; saveNow();
+        }
+      }
       render();
     };
     input.addEventListener("keydown", (e) => {
@@ -607,6 +612,21 @@
 
   /* ---------------- 헬퍼 ---------------- */
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  /* "보고서 작성 #업무 #급함" → { text: "보고서 작성", tags: ["업무","급함"] } (개수 제한 없음, 중복 제거) */
+  function parseTags(raw) {
+    const tags = [];
+    const text = (raw || "").replace(/#([^\s#]+)/g, (m, tag) => { tags.push(tag); return " "; }).replace(/\s+/g, " ").trim();
+    return { text, tags: [...new Set(tags)] };
+  }
+  /* 할 일을 편집창에 넣을 때 쓰는 "제목 + #태그" 합본 문자열 */
+  function taskToInput(t) {
+    const tags = (t.tags && t.tags.length) ? t.tags : (t.category ? [t.category] : []);
+    return tags.length ? (t.text + " " + tags.map((x) => "#" + x).join(" ")) : t.text;
+  }
+  /* 표시용 태그 목록 (신규 tags 우선, 없으면 레거시 category) */
+  function taskTags(t) {
+    return (t.tags && t.tags.length) ? t.tags : (t.category ? [t.category] : []);
+  }
   function shiftDate(date, delta) { const d = new Date(date + "T00:00:00"); d.setDate(d.getDate() + delta); return Store.todayStr(d); }
   let toastTimer = null;
   function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2200); }
