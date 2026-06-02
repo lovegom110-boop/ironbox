@@ -21,9 +21,20 @@ jobs:
           SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_IRONBOX_3200A }}
         run: |
           printf '%s' "$SA_JSON" > "$HOME/sa.json"
+          # 시크릿이 base64로 저장된 경우 자동 디코드 (정상 서비스계정 JSON엔 client_email이 평문으로 존재)
+          if ! grep -q client_email "$HOME/sa.json"; then
+            if base64 -d "$HOME/sa.json" > "$HOME/sa.dec.json" 2>/dev/null && grep -q client_email "$HOME/sa.dec.json"; then
+              mv "$HOME/sa.dec.json" "$HOME/sa.json"
+              echo "decoded base64-encoded service account"
+            fi
+          fi
           export GOOGLE_APPLICATION_CREDENTIALS="$HOME/sa.json"
           echo "service account file size: $(wc -c < "$HOME/sa.json") bytes"
           echo "client_email present: $(grep -c client_email "$HOME/sa.json")"
+          if ! grep -q client_email "$HOME/sa.json"; then
+            echo "::error::시크릿 FIREBASE_SERVICE_ACCOUNT_IRONBOX_3200A 에 client_email이 없습니다. 서비스계정 JSON 원문(raw)을 그대로 시크릿에 저장하세요(base64/따옴표 없이)."
+            exit 1
+          fi
           set +e
           npx firebase-tools@latest deploy --only hosting --project ironbox-3200a --non-interactive 2>&1 | tee deploy.log
           code=${PIPESTATUS[0]}
