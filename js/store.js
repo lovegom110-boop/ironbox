@@ -41,7 +41,10 @@
     return `${y}-${m}-${day}`;
   }
   function emptyDay(date) {
-    return { date: date, wakeNote: "", tasks: [], feedback: "", tomorrowPlan: "", updatedAt: 0 };
+    return { date: date, wakeNote: "", tasks: [], notes: [], feedback: "", tomorrowPlan: "", updatedAt: 0 };
+  }
+  function newNote(title) {
+    return { id: uid(), title: (title || "").trim(), body: "", updatedAt: 0 };
   }
   function newTask(text) {
     return {
@@ -98,6 +101,7 @@
   const Store = {
     todayStr,
     newTask,
+    newNote,
     emptyDay,
 
     async init() {
@@ -302,6 +306,7 @@
   function normalizeDay(d) {
     const day = Object.assign(emptyDay(d.date), d);
     day.tasks = (d.tasks || []).map((t) => Object.assign(newTask(""), t));
+    day.notes = Array.isArray(day.notes) ? day.notes : [];
     return day;
   }
   function hasContent(d) {

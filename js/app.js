@@ -10,7 +10,7 @@
   const STATUS_ORDER = ["do", "defer", "delegate", "delete"];
   const TAG_PRESETS = ["글쓰기", "이메일", "회의", "연락", "기획", "검토", "잡무", "공부"];
 
-  const state = { date: Store.todayStr(), day: null, filter: "all", selectedId: null, editingTaskId: null, openNoteId: null, view: "day", weekStart: null, addDate: null, calY: 0, calM: 0 };
+  const state = { date: Store.todayStr(), day: null, filter: "all", selectedId: null, editingTaskId: null, openNoteId: null, view: "day", weekStart: null, addDate: null, editNoteId: null, calY: 0, calM: 0 };
   let saveTimer = null;
 
   /* ---------------- 초기화 ---------------- */
@@ -92,6 +92,7 @@
     renderReview();
     renderTextField($("#feedback-field"), () => state.day.feedback, (v) => { state.day.feedback = v; }, { placeholder: "오늘 회고… 계획대로 됐나요? 내일은 무엇을 다르게 할까요?", multiline: true });
     renderTextField($("#tomorrow-field"), () => state.day.tomorrowPlan, (v) => { state.day.tomorrowPlan = v; }, { placeholder: "내일 업무 계획을 적어보세요", multiline: true });
+    renderNotes();
   }
   /* ---------------- Google 캘린더 (단일 버튼 흐름) ---------------- */
   async function sendToGoogleCalendar() {
@@ -519,6 +520,59 @@
     toast("할 일을 추가했어요");
   }
 
+  /* ---------------- 노트 (카드 학습정리, EasyMDE) ---------------- */
+  let noteMDE = null;
+  function renderNotes() {
+    Notes.renderList($("#notes-list"), state.day.notes || [], {
+      onAdd: () => openNoteModal(null),
+      onEdit: (id) => openNoteModal(id),
+      onDelete: (id) => deleteNoteCard(id)
+    });
+  }
+  function openNoteModal(id) {
+    state.editNoteId = id;
+    const note = id ? (state.day.notes || []).find((n) => n.id === id) : null;
+    $("#note-modal-title").textContent = id ? "노트 편집" : "새 노트";
+    $("#note-title").value = note ? (note.title || "") : "";
+    $("#note-del-btn").hidden = !id;
+    $("#note-modal").hidden = false;
+    if (noteMDE) { try { noteMDE.toTextArea(); } catch (_) {} noteMDE = null; }
+    const ta = $("#note-editor");
+    ta.value = note ? (note.body || "") : "";
+    noteMDE = new EasyMDE({
+      element: ta, spellChecker: false, status: false, autofocus: false,
+      placeholder: "마크다운으로 정리… (굵게·제목·목록·링크)",
+      toolbar: ["bold", "italic", "heading", "|", "unordered-list", "ordered-list", "|", "link", "quote", "code", "|", "preview", "guide"],
+      previewRender: (md) => Notes.mdToSafeHtml(md)
+    });
+    setTimeout(() => { try { noteMDE.codemirror.refresh(); } catch (_) {} }, 60);
+  }
+  function closeNoteModal() {
+    if (noteMDE) { try { noteMDE.toTextArea(); } catch (_) {} noteMDE = null; }
+    $("#note-modal").hidden = true;
+    state.editNoteId = null;
+  }
+  function saveNoteModal() {
+    const title = $("#note-title").value.trim();
+    const body = noteMDE ? noteMDE.value() : "";
+    if (!title && !body.trim()) { closeNoteModal(); return; }
+    if (state.editNoteId) {
+      const n = (state.day.notes || []).find((x) => x.id === state.editNoteId);
+      if (n) { n.title = title; n.body = body; n.updatedAt = Date.now(); }
+    } else {
+      const n = Store.newNote(title); n.body = body; n.updatedAt = Date.now();
+      if (!Array.isArray(state.day.notes)) state.day.notes = [];
+      state.day.notes.push(n);
+    }
+    closeNoteModal(); saveNow(); render();
+    toast("노트를 저장했어요");
+  }
+  function deleteNoteCard(id) {
+    if (!confirm("이 노트를 삭제할까요?")) return;
+    state.day.notes = (state.day.notes || []).filter((n) => n.id !== id);
+    saveNow(); render();
+  }
+
   function openSearch() {
     $("#search-modal").hidden = false; $("#search-input").value = "";
     $("#search-results").innerHTML = `<p class="search-empty">검색어를 입력하세요.</p>`;
@@ -587,6 +641,11 @@
     $("#addtask-title").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitAddTask(); } });
     $("#addtask-submit").onclick = submitAddTask;
 
+    $("#note-close").onclick = closeNoteModal;
+    $("#note-save-btn").onclick = saveNoteModal;
+    $("#note-del-btn").onclick = () => { const id = state.editNoteId; if (id) { closeNoteModal(); deleteNoteCard(id); } };
+    $("#note-modal").addEventListener("click", (e) => { if (e.target.id === "note-modal") closeNoteModal(); });
+
     $("#open-menu").onclick = (e) => { e.stopPropagation(); toggleMenu(); };
     document.addEventListener("click", (e) => { if (!e.target.closest(".menu-wrap")) toggleMenu(false); });
     $("#connect-file").onclick = async () => { try { const n = await Store.connectNewFile(); toast("자동저장 연결: " + n); updateSaveStatus(); toggleMenu(false); } catch (err) { if (err && err.name !== "AbortError") toast(err.message || "연결 실패"); } };
@@ -614,7 +673,7 @@
 
     document.addEventListener("keydown", (e) => {
       if (e.target.matches("input,textarea,select")) return;
-      if (!$("#calendar-modal").hidden || !$("#search-modal").hidden || !$("#addtask-modal").hidden) return;
+      if (!$("#calendar-modal").hidden || !$("#search-modal").hidden || !$("#addtask-modal").hidden || !$("#note-modal").hidden) return;
       if (e.key === "ArrowLeft") state.view === "week" ? shiftWeek(-1) : loadDay(shiftDate(state.date, -1));
       if (e.key === "ArrowRight") state.view === "week" ? shiftWeek(+1) : loadDay(shiftDate(state.date, +1));
     });

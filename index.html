@@ -9,6 +9,7 @@
   <link rel="icon" href="icons/favicon-32.png" sizes="32x32" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendard-variable.min.css" />
+  <link rel="stylesheet" href="js/lib/easymde.min.css" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -126,6 +127,12 @@
       <div id="feedback-field" class="text-field multi"></div>
     </section>
 
+    <!-- 노트 (하루별 카드 학습정리) -->
+    <section class="card">
+      <div class="sec-head"><h2>노트</h2><span class="sec-sub">학습·공부 내용을 카드로 정리 (마크다운)</span></div>
+      <div id="notes-list" class="notes-list"></div>
+    </section>
+
     <!-- 5. 내일 업무 계획 -->
     <section class="card">
       <div class="sec-head"><h2>내일 업무 계획</h2></div>
@@ -177,6 +184,24 @@
     </div>
   </div>
 
+  <!-- 노트 편집 (EasyMDE) -->
+  <div id="note-modal" class="modal" hidden>
+    <div class="modal-card note-modal-card">
+      <div class="modal-head">
+        <span id="note-modal-title" class="modal-title">새 노트</span>
+        <button id="note-close" class="close-btn" type="button">✕</button>
+      </div>
+      <div class="note-modal-body">
+        <input id="note-title" class="addtask-title-input" type="text" placeholder="노트 제목" autocomplete="off" />
+        <textarea id="note-editor"></textarea>
+        <div class="note-modal-actions">
+          <button id="note-del-btn" class="row-btn danger" type="button" hidden>삭제</button>
+          <button id="note-save-btn" class="btn-primary" type="button">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <input type="file" id="import-file" accept="application/json" hidden />
   <div id="toast" class="toast" hidden></div>
 
@@ -192,6 +217,10 @@
   <script src="js/calendar.js"></script>
   <script src="js/gcal.js"></script>
   <script src="js/weekview.js"></script>
+  <script src="js/lib/marked.min.js"></script>
+  <script src="js/lib/purify.min.js"></script>
+  <script src="js/lib/easymde.min.js"></script>
+  <script src="js/notes.js"></script>
   <script src="js/app.js"></script>
   <script src="js/auth.js"></script>
 </body>
