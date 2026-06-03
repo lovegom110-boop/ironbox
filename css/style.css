@@ -91,11 +91,19 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
 .field-auto:focus{border-color:var(--blue); background:var(--bg); box-shadow:0 0 0 3px var(--blue-soft)}
 
 /* ===== 노트 (카드 학습정리) ===== */
-.notes-list{display:flex; flex-direction:column; gap:10px}
-.note-card{border:1px solid var(--line-soft); border-radius:13px; padding:12px 14px; background:var(--bg)}
+.notes-list{display:block}
+.notes-grid{column-count:2; column-gap:12px}
+@media (max-width:640px){ .notes-grid{column-count:1} }
+.note-card{break-inside:avoid; display:inline-block; width:100%; margin:0 0 12px; border:1px solid rgba(0,0,0,.06); border-radius:7px; padding:12px 14px; box-shadow:0 3px 10px rgba(0,0,0,.13); transform:rotate(-1deg); transition:transform .12s, box-shadow .12s}
+.note-card:nth-child(even){transform:rotate(1.2deg)}
+.note-card:hover{transform:rotate(0); box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.note-card.sticky-0{background:#fff7bd}
+.note-card.sticky-1{background:#ffd9e3}
+.note-card.sticky-2{background:#cdeccd}
+.note-card.sticky-3{background:#d4eaff}
 .note-card-head{display:flex; align-items:center; gap:8px}
 .note-card-title{flex:1; min-width:0; font-weight:700; font-size:15px; word-break:break-word; cursor:text}
-.note-card-body{margin-top:8px; font-size:14px; line-height:1.65; color:var(--ink-2); word-break:break-word}
+.note-card-body{margin-top:8px; font-size:14px; line-height:1.65; color:#3a3a3a; word-break:break-word}
 .note-card-body.md > *:first-child{margin-top:0}
 .note-card-body.md > *:last-child{margin-bottom:0}
 .note-card-body.md h1,.note-card-body.md h2,.note-card-body.md h3{font-size:15px; font-weight:800; margin:10px 0 4px; color:var(--ink)}
@@ -113,6 +121,9 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
 .note-modal-body{padding:14px 16px 18px; display:flex; flex-direction:column; gap:10px}
 .note-modal-actions{display:flex; justify-content:flex-end; gap:8px}
 .note-modal-actions .btn-primary{height:42px; padding:0 22px}
+/* 빈 슬롯 인라인 생성 입력 */
+.tl-newinput{position:absolute; left:calc(var(--tl-gutter) + 7px); right:7px; z-index:6}
+.tl-newinput-field{width:100%; height:100%; box-sizing:border-box; border:2px solid var(--blue); border-radius:6px; padding:2px 9px; font-size:13.5px; font-weight:600; font-family:inherit; outline:none; background:#fff; box-shadow:0 3px 12px rgba(0,0,0,.15)}
 
 /* Big 3 */
 .big3-list{display:flex; flex-direction:column; gap:10px}

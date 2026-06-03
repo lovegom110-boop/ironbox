@@ -11,6 +11,12 @@
     if (text != null) e.textContent = text;
     return e;
   }
+  // id 기반 안정적 포스트잇 색 인덱스(0~3)
+  function colorIdx(id) {
+    let h = 0; const s = String(id);
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return h % 4;
+  }
 
   const Notes = {
     // 마크다운 → 살균된 HTML (XSS 차단)
@@ -29,8 +35,9 @@
       if (!list.length) {
         container.appendChild(el("p", "empty-hint small", "학습·공부 내용을 카드로 정리해보세요. 마크다운(굵게·제목·목록·링크)으로 쓸 수 있어요."));
       }
+      const grid = el("div", "notes-grid");
       for (const n of list) {
-        const card = el("div", "note-card");
+        const card = el("div", "note-card sticky-" + colorIdx(n.id));
         const head = el("div", "note-card-head");
         const title = el("div", "note-card-title", n.title || "(제목 없음)");
         const edit = el("button", "row-btn", "편집"); edit.onclick = () => handlers.onEdit(n.id);
@@ -42,8 +49,9 @@
         bodyEl.querySelectorAll("a").forEach((a) => { a.target = "_blank"; a.rel = "noopener noreferrer"; });
         if ((n.body || "").trim()) card.appendChild(bodyEl);
         card.querySelector(".note-card-title").ondblclick = () => handlers.onEdit(n.id);
-        container.appendChild(card);
+        grid.appendChild(card);
       }
+      if (list.length) container.appendChild(grid);
       const add = el("button", "note-add", "+ 노트 추가");
       add.type = "button";
       add.onclick = () => handlers.onAdd();

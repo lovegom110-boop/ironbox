@@ -688,6 +688,37 @@
   function highlightSlot(i) { tlEl().querySelectorAll(".tl-slot.drop").forEach((s) => s.classList.remove("drop")); if (i >= 0) { const s = tlEl().querySelector('.tl-slot[data-slot="' + i + '"]'); if (s) s.classList.add("drop"); } }
   function showCreate(a, b) { clearCreate(); createEl = document.createElement("div"); createEl.className = "tl-create"; createEl.style.top = a * TimeBox.ROW_H + 1 + "px"; createEl.style.height = (b - a + 1) * TimeBox.ROW_H - 2 + "px"; tlEl().appendChild(createEl); }
   function clearCreate() { if (createEl) { createEl.remove(); createEl = null; } }
+  /* 빈 슬롯 인라인 입력 → 그 시간에 새 작업 생성 (TickTick식) */
+  function openSlotInput(start, dur) {
+    clearCreate();
+    const wrap = document.createElement("div");
+    wrap.className = "tl-newinput";
+    wrap.style.top = (start * TimeBox.ROW_H + 1) + "px";
+    wrap.style.height = (dur * TimeBox.ROW_H - 2) + "px";
+    const inp = document.createElement("input");
+    inp.type = "text"; inp.className = "tl-newinput-field"; inp.placeholder = "할 일 입력 + Enter"; inp.autocomplete = "off";
+    wrap.appendChild(inp);
+    tlEl().appendChild(wrap);
+    setTimeout(() => inp.focus(), 0);
+    let done = false;
+    const finish = (commit) => {
+      if (done) return; done = true;
+      const raw = inp.value; wrap.remove();
+      if (commit) {
+        const { text, tags } = parseTags(raw);
+        if (text) {
+          const tk = Store.newTask(text); tk.tags = tags; tk.plannedStart = start; tk.plannedDur = dur;
+          state.day.tasks.push(tk); saveNow(); render(); return;
+        }
+      }
+      render();
+    };
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); finish(true); }
+      else if (e.key === "Escape") { e.preventDefault(); finish(false); }
+    });
+    inp.addEventListener("blur", () => finish(true));
+  }
 
   function setupInteractions() {
     tlEl().addEventListener("pointerdown", (e) => {
@@ -698,6 +729,7 @@
       if (handle && block) { const t = findTask(block.dataset.id); if (!t) return; e.preventDefault(); drag = { type: "resize", id: t.id, sy: e.clientY, od: t.plannedDur || 1 }; block.classList.add("dragging"); }
       else if (block && !e.target.closest(".b-actions")) { const t = findTask(block.dataset.id); if (!t) return; e.preventDefault(); drag = { type: "move", id: t.id, sy: e.clientY, os: t.plannedStart }; block.classList.add("dragging"); }
       else if (slot && state.selectedId) { e.preventDefault(); const s = parseInt(slot.dataset.slot, 10); drag = { type: "create", id: state.selectedId, start: s, cur: s, moved: false }; showCreate(s, s); }
+      else if (slot) { e.preventDefault(); const s = parseInt(slot.dataset.slot, 10); drag = { type: "newat", start: s, cur: s, moved: false }; showCreate(s, s); }
     });
     $("#task-list").addEventListener("pointerdown", (e) => {
       if (e.button) return;
@@ -716,7 +748,7 @@
       if (!drag.moved) { if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 6) return; drag.moved = true; ghostEl = document.createElement("div"); ghostEl.className = "tl-ghost"; ghostEl.textContent = drag.text; document.body.appendChild(ghostEl); }
       ghostEl.style.left = e.clientX + 12 + "px"; ghostEl.style.top = e.clientY + 10 + "px";
       highlightSlot(overTL(e.clientX, e.clientY) ? ptSlot(e.clientY) : -1);
-    } else if (drag.type === "create") {
+    } else if (drag.type === "create" || drag.type === "newat") {
       const s = ptSlot(e.clientY); if (s !== drag.cur || !drag.moved) { drag.cur = s; drag.moved = true; showCreate(Math.min(drag.start, s), Math.max(drag.start, s)); }
     } else if (drag.type === "move") {
       const b = blockEl(drag.id); if (!b) return; const delta = Math.round((e.clientY - drag.sy) / TimeBox.ROW_H);
@@ -732,6 +764,7 @@
     clearCreate(); highlightSlot(-1);
     if (ghostEl) { ghostEl.remove(); ghostEl = null; }
     tlEl().querySelectorAll(".tl-block.dragging").forEach((b) => b.classList.remove("dragging"));
+    if (d.type === "newat") { const a = Math.min(d.start, d.cur), b = Math.max(d.start, d.cur); openSlotInput(a, b - a + 1); return; }
     const t = findTask(d.id); if (!t) return;
     if (d.type === "inbox") {
       if (d.moved && overTL(e.clientX, e.clientY)) { t.plannedStart = ptSlot(e.clientY); if (!t.plannedDur) t.plannedDur = 1; saveNow(); render(); }
