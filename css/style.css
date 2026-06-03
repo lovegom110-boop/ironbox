@@ -151,9 +151,9 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
 .vt.active{background:var(--ink);color:#fff}
 
 /* ===== 주간 뷰 (읽기 전용) ===== */
-.week-view{margin:14px 0 40px;overflow-x:auto;border:1px solid var(--line-soft);border-radius:13px;background:var(--bg)}
+.week-view{margin:14px 0 24px;overflow:auto;height:calc(100vh - 88px);height:calc(100dvh - 88px);border:1px solid var(--line-soft);border-radius:13px;background:var(--bg)}
 .wv-head,.wv-body{display:grid;grid-template-columns:44px repeat(7,minmax(96px,1fr));min-width:716px}
-.wv-head{border-bottom:1px solid var(--line)}
+.wv-head{position:sticky;top:0;z-index:3;background:var(--bg);border-bottom:1px solid var(--line)}
 .wv-dayhead{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 2px;cursor:pointer;border-left:1px solid var(--line-soft)}
 .wv-dayhead:hover{background:var(--blue-soft)}
 .wv-dayhead.today{background:var(--blue-soft)}
@@ -167,8 +167,8 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
 .wv-col.today{background:rgba(20,40,160,.035)}
 .wv-line{position:absolute;left:0;right:0;border-top:1px solid #f3f3f3;pointer-events:none}
 .wv-line.hour{border-top-color:#e3e7ef}
-.wv-block{position:absolute;background:var(--blue);color:#fff;border-radius:4px;padding:1px 4px;overflow:hidden;cursor:pointer;font-size:10.5px;line-height:1.2;box-sizing:border-box}
-.wv-block.big3{background:#0e1f7a}
+.wv-block{position:absolute;background:var(--blue);color:#fff;border-radius:4px;padding:1px 4px;overflow:hidden;cursor:pointer;font-size:10.5px;line-height:1.2;box-sizing:border-box;border-left:3px solid transparent}
+.wv-block.big3{background:#f6b73c;color:#3d2c00;font-weight:700;border-left-color:#c77f00}
 .wv-block.done{opacity:.5}
 .wv-btext{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tag{font-size:11.5px; border:1px dashed var(--line); border-radius:999px; padding:3px 9px; color:var(--ink-3); background:transparent; cursor:pointer}
