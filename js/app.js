@@ -177,49 +177,23 @@
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
+  function autoGrow(ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; }
   function renderTextField(elx, getValue, setValue, opts) {
-    const value = (getValue() || "");
-    const editing = elx.dataset.editing === "1";
-    // mid-edit guard: input이 살아있으면 재구축 X
-    if (editing && elx.querySelector("input, textarea")) return;
-    elx.innerHTML = "";
-    if (editing || !value) {
-      const multi = !!opts.multiline;
-      const inp = document.createElement(multi ? "textarea" : "input");
-      inp.className = "field-input" + (multi ? " multiline" : "");
-      if (!multi) inp.type = "text";
-      inp.value = value; inp.placeholder = opts.placeholder || ""; inp.autocomplete = "off";
-      const btn = document.createElement("button");
-      btn.className = "row-btn primary"; btn.textContent = "저장"; btn.disabled = !value.trim();
-      const commit = () => {
-        const v = inp.value.trim(); if (!v) return;
-        setValue(v); delete elx.dataset.editing; saveNow(); render();
-      };
-      inp.addEventListener("focus", () => { elx.dataset.editing = "1"; });
-      inp.addEventListener("input", () => { btn.disabled = !inp.value.trim(); });
-      inp.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && (!multi || !e.shiftKey)) { e.preventDefault(); commit(); }
-        else if (e.key === "Escape") { e.preventDefault(); delete elx.dataset.editing; render(); }
-      });
-      btn.addEventListener("click", commit);
-      const btnRow = document.createElement("div"); btnRow.className = "field-buttons"; btnRow.appendChild(btn);
-      elx.appendChild(inp); elx.appendChild(btnRow);
-      if (editing) setTimeout(() => inp.focus(), 0);
-    } else {
-      const tx = document.createElement("div");
-      tx.className = "field-text"; tx.textContent = value;
-      tx.title = "더블클릭하여 수정";
-      tx.ondblclick = () => { elx.dataset.editing = "1"; render(); };
-      const edit = document.createElement("button");
-      edit.className = "row-btn"; edit.textContent = "수정";
-      edit.onclick = () => { elx.dataset.editing = "1"; render(); };
-      const del = document.createElement("button");
-      del.className = "row-btn danger"; del.textContent = "삭제";
-      del.onclick = () => { setValue(""); saveNow(); render(); };
-      const btnRow = document.createElement("div"); btnRow.className = "field-buttons";
-      btnRow.appendChild(edit); btnRow.appendChild(del);
-      elx.appendChild(tx); elx.appendChild(btnRow);
+    // 항상 편집 가능한 자동저장 textarea (모드/버튼 없음, 내용만큼 높이 자동)
+    let ta = elx.querySelector("textarea");
+    if (ta && document.activeElement === ta) return; // 입력 중이면 커서/입력 보존
+    const value = getValue() || "";
+    if (!ta) {
+      elx.innerHTML = "";
+      ta = document.createElement("textarea");
+      ta.className = "field-auto" + (opts.multiline ? " multi" : "");
+      ta.placeholder = opts.placeholder || ""; ta.rows = 1; ta.autocomplete = "off";
+      ta.addEventListener("input", () => { autoGrow(ta); setValue(ta.value); saveDebounced(); });
+      ta.addEventListener("blur", () => { const v = ta.value.trim(); ta.value = v; setValue(v); autoGrow(ta); saveNow(); });
+      elx.appendChild(ta);
     }
+    if (ta.value !== value) ta.value = value;
+    autoGrow(ta);
   }
   function renderField(elx, value, placeholder) {
     if (elx.dataset.editing) return;

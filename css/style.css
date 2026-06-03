@@ -84,6 +84,11 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
 .field-buttons{display:flex; gap:6px; flex:none}
 .field-text{flex:1; padding:12px 14px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--bg); min-height:22px; line-height:1.55; white-space:pre-wrap; word-break:break-word; cursor:text; font-size:15px}
 .text-field.multi .field-text{min-height:96px; width:100%}
+/* 기상/회고/내일계획 — 항상 편집 가능한 자동저장·자동높이 칸 */
+.field-auto{display:block; width:100%; flex:1; border:1px solid var(--line-soft); border-radius:var(--radius-sm); padding:12px 14px; font-family:inherit; font-size:15px; line-height:1.6; color:var(--ink); background:var(--bg-soft); outline:none; resize:none; overflow:hidden; box-sizing:border-box; min-height:46px; transition:border-color .12s, background .12s, box-shadow .12s}
+.field-auto.multi{min-height:74px}
+.field-auto:hover{border-color:var(--line)}
+.field-auto:focus{border-color:var(--blue); background:var(--bg); box-shadow:0 0 0 3px var(--blue-soft)}
 
 /* Big 3 */
 .big3-list{display:flex; flex-direction:column; gap:10px}
