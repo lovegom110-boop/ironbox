@@ -137,6 +137,11 @@
       return all;
     },
 
+    /* 주어진 날짜 배열만 병렬 조회 (주간 뷰용 — 컬렉션 풀스캔 회피) */
+    async getDays(dates) {
+      return Promise.all(dates.map((d) => this.getDay(d)));
+    },
+
     /* 해당 월에 '내용이 있는' 날짜 set 반환 (달력 점 표시용) */
     async getMonthMarks(year, month /* 0-based */) {
       const all = await this.getAllDays();

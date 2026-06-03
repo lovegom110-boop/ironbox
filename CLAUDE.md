@@ -26,6 +26,7 @@ js/{store, timebox, calendar, gcal, app}.js
 
 ### Added
 - **작업별 세부 메모** — 각 할 일에 📝 버튼 → 인라인 textarea로 멀티라인 메모 작성·저장(Firestore, 디바운스). 메모 유무는 📝 아이콘 농도로 표시. 메모는 **검색 대상에 포함**, **업무일지 텍스트(.txt)·Google 캘린더 설명**에 함께 출력, **타임라인 블록에 📝 표시**. 기존 데이터는 normalizeDay가 `note:""` 자동 보강(마이그레이션 불필요). 설계: [docs/superpowers/specs/2026-06-03-task-notes-design.md](docs/superpowers/specs/2026-06-03-task-notes-design.md). (store.js note 필드·검색, app.js 토글/펼침/가드/텍스트내보내기, timebox.js·gcal.js·style.css, SW v12→v13)
+- **주간 타임박스 플래너(읽기 전용)** — 헤더 `[일][주]` 토글로 전환. 7일 × 시간 그리드에 한 주 타임박스를 한눈에(오늘/주말/공휴일 강조, 겹침 가로분할). 요일·블록 클릭 → 그 날 '하루 보기'로 점프, 좌우 화살표 = 주 단위 이동. 신규 모듈 `js/weekview.js` + `Store.getDays(dates)`, SW v13→v14. 일요일 시작(기존 달력과 일관). 설계: [docs/superpowers/specs/2026-06-03-weekly-view-design.md](docs/superpowers/specs/2026-06-03-weekly-view-design.md).
 
 ## 2026-06-02
 

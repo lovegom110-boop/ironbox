@@ -10,7 +10,7 @@
   const STATUS_ORDER = ["do", "defer", "delegate", "delete"];
   const TAG_PRESETS = ["글쓰기", "이메일", "회의", "연락", "기획", "검토", "잡무", "공부"];
 
-  const state = { date: Store.todayStr(), day: null, filter: "all", selectedId: null, editingTaskId: null, openNoteId: null, calY: 0, calM: 0 };
+  const state = { date: Store.todayStr(), day: null, filter: "all", selectedId: null, editingTaskId: null, openNoteId: null, view: "day", weekStart: null, calY: 0, calM: 0 };
   let saveTimer = null;
 
   /* ---------------- 초기화 ---------------- */
@@ -48,6 +48,34 @@
   }
   function saveNow() { return Store.saveDay(state.day).then(updateSaveStatus).catch((e) => { console.error("저장 실패:", e); toast("저장 실패 — 변경이 반영되지 않았어요"); }); }
   function saveDebounced() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 400); }
+
+  /* ---------------- 주간 뷰 (읽기 전용) ---------------- */
+  function setView(v) {
+    state.view = v;
+    const dBtn = $("#view-day"), wBtn = $("#view-week");
+    if (dBtn) dBtn.classList.toggle("active", v === "day");
+    if (wBtn) wBtn.classList.toggle("active", v === "week");
+    const main = document.querySelector("main"), wv = $("#week-view");
+    if (v === "week") {
+      main.hidden = true; wv.hidden = false;
+      state.weekStart = WeekView.weekStartOf(state.date);
+      renderWeek();
+    } else {
+      wv.hidden = true; main.hidden = false;
+    }
+  }
+  async function renderWeek() {
+    const dates = [];
+    for (let i = 0; i < 7; i++) dates.push(WeekView.addDays(state.weekStart, i));
+    const days = await Store.getDays(dates);
+    WeekView.render($("#week-view"), {
+      weekStart: state.weekStart, days, today: Store.todayStr(),
+      onPickDay: (date) => { setView("day"); loadDay(date); }
+    });
+    const end = WeekView.addDays(state.weekStart, 6);
+    $("#date-label").textContent = `${state.weekStart.replace(/-/g, ".")} – ${end.slice(5).replace(/-/g, ".")}`;
+  }
+  function shiftWeek(delta) { state.weekStart = WeekView.addDays(state.weekStart, delta * 7); renderWeek(); }
 
   /* ---------------- 전체 렌더 ---------------- */
   function render() {
@@ -481,7 +509,7 @@
     const marks = await Store.getMonthMarks(state.calY, state.calM);
     CalendarView.render($("#calendar"), {
       year: state.calY, month: state.calM, marks, today: Store.todayStr(), selected: state.date,
-      onPick: (date) => { $("#calendar-modal").hidden = true; loadDay(date); }
+      onPick: (date) => { $("#calendar-modal").hidden = true; setView("day"); loadDay(date); }
     });
   }
   function calShift(d) { state.calM += d; if (state.calM < 0) { state.calM = 11; state.calY--; } if (state.calM > 11) { state.calM = 0; state.calY++; } renderCalendar(); }
@@ -508,7 +536,7 @@
         if (h.wake) html += `<div class="sr-line"><span class="k">기상</span>${esc(h.wake)}</div>`;
         if (h.feedback) html += `<div class="sr-line"><span class="k">회고</span>${esc(h.feedback)}</div>`;
         item.innerHTML = html;
-        item.onclick = () => { $("#search-modal").hidden = true; loadDay(h.date); };
+        item.onclick = () => { $("#search-modal").hidden = true; setView("day"); loadDay(h.date); };
         box.appendChild(item);
       }
     }, 200);
@@ -523,10 +551,12 @@
 
   /* ---------------- 이벤트 ---------------- */
   function bindGlobalEvents() {
-    $("#prev-day").onclick = () => loadDay(shiftDate(state.date, -1));
-    $("#next-day").onclick = () => loadDay(shiftDate(state.date, +1));
-    $("#today-btn").onclick = () => loadDay(Store.todayStr());
+    $("#prev-day").onclick = () => state.view === "week" ? shiftWeek(-1) : loadDay(shiftDate(state.date, -1));
+    $("#next-day").onclick = () => state.view === "week" ? shiftWeek(+1) : loadDay(shiftDate(state.date, +1));
+    $("#today-btn").onclick = () => { if (state.view === "week") { state.weekStart = WeekView.weekStartOf(Store.todayStr()); renderWeek(); } else loadDay(Store.todayStr()); };
     $("#date-label").onclick = openCalendar;
+    $("#view-day").onclick = () => setView("day");
+    $("#view-week").onclick = () => setView("week");
     /* wake/feedback는 renderTextField가 내부에서 처리 */
     const bdInput = $("#braindump-input"), bdBtn = $("#add-btn");
     bdBtn.disabled = true;
@@ -573,8 +603,8 @@
     document.addEventListener("keydown", (e) => {
       if (e.target.matches("input,textarea,select")) return;
       if (!$("#calendar-modal").hidden || !$("#search-modal").hidden) return;
-      if (e.key === "ArrowLeft") loadDay(shiftDate(state.date, -1));
-      if (e.key === "ArrowRight") loadDay(shiftDate(state.date, +1));
+      if (e.key === "ArrowLeft") state.view === "week" ? shiftWeek(-1) : loadDay(shiftDate(state.date, -1));
+      if (e.key === "ArrowRight") state.view === "week" ? shiftWeek(+1) : loadDay(shiftDate(state.date, +1));
     });
   }
 

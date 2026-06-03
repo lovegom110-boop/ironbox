@@ -144,6 +144,33 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
 .task-note{flex-basis:100%; width:100%; margin-top:8px}
 .task-note-input{width:100%; min-height:64px; resize:vertical; border:1px solid var(--blue); border-radius:9px; padding:8px 10px; font-size:14px; font-family:inherit; line-height:1.5; color:var(--ink); outline:none; box-shadow:0 0 0 3px var(--blue-soft); box-sizing:border-box}
 .b-note{margin-left:2px}
+
+/* ===== 일/주 보기 토글 ===== */
+.viewtoggle{display:inline-flex;margin-left:6px;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.vt{border:none;background:var(--bg);color:var(--ink-2);font-size:12.5px;font-weight:700;padding:6px 11px;cursor:pointer}
+.vt.active{background:var(--ink);color:#fff}
+
+/* ===== 주간 뷰 (읽기 전용) ===== */
+.week-view{margin:14px 0 40px;overflow-x:auto;border:1px solid var(--line-soft);border-radius:13px;background:var(--bg)}
+.wv-head,.wv-body{display:grid;grid-template-columns:44px repeat(7,minmax(96px,1fr));min-width:716px}
+.wv-head{border-bottom:1px solid var(--line)}
+.wv-dayhead{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 2px;cursor:pointer;border-left:1px solid var(--line-soft)}
+.wv-dayhead:hover{background:var(--blue-soft)}
+.wv-dayhead.today{background:var(--blue-soft)}
+.wv-dnum{font-weight:700;font-size:13px;color:var(--ink)}
+.wv-dow{font-size:11px;color:var(--ink-3)}
+.wv-dayhead.today .wv-dnum{color:var(--blue)}
+.wv-dayhead.red .wv-dnum,.wv-dayhead.red .wv-dow{color:#d11}
+.wv-gutter{position:relative}
+.wv-time{position:absolute;right:5px;font-size:10px;color:var(--ink-3);transform:translateY(-6px)}
+.wv-col{position:relative;border-left:1px solid var(--line-soft)}
+.wv-col.today{background:rgba(20,40,160,.035)}
+.wv-line{position:absolute;left:0;right:0;border-top:1px solid #f3f3f3;pointer-events:none}
+.wv-line.hour{border-top-color:#e3e7ef}
+.wv-block{position:absolute;background:var(--blue);color:#fff;border-radius:4px;padding:1px 4px;overflow:hidden;cursor:pointer;font-size:10.5px;line-height:1.2;box-sizing:border-box}
+.wv-block.big3{background:#0e1f7a}
+.wv-block.done{opacity:.5}
+.wv-btext{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tag{font-size:11.5px; border:1px dashed var(--line); border-radius:999px; padding:3px 9px; color:var(--ink-3); background:transparent; cursor:pointer}
 .tag.has{border-style:solid; border-color:var(--blue); color:var(--blue); background:var(--blue-soft)}
 .placed-at{font-size:11.5px; color:var(--blue); font-weight:700; background:var(--blue-soft); border-radius:999px; padding:3px 9px}

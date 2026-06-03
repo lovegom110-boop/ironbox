@@ -29,6 +29,10 @@
       <button id="date-label" class="date-label" title="달력 열기">날짜</button>
       <button id="next-day" class="icon-btn" title="다음 날">›</button>
       <button id="today-btn" class="ghost-btn">오늘</button>
+      <span class="viewtoggle">
+        <button id="view-day" class="vt active" type="button" title="하루 보기">일</button>
+        <button id="view-week" class="vt" type="button" title="주간 보기">주</button>
+      </span>
     </div>
     <div class="actions">
       <button id="open-calendar" class="icon-btn" title="달력">달력</button>
@@ -128,6 +132,9 @@
     </section>
   </main>
 
+  <!-- 주간 뷰 (읽기 전용) -->
+  <section id="week-view" class="week-view" hidden></section>
+
   <!-- 달력 -->
   <div id="calendar-modal" class="modal" hidden>
     <div class="modal-card">
@@ -166,6 +173,7 @@
   <script src="js/timebox.js"></script>
   <script src="js/calendar.js"></script>
   <script src="js/gcal.js"></script>
+  <script src="js/weekview.js"></script>
   <script src="js/app.js"></script>
   <script src="js/auth.js"></script>
 </body>
