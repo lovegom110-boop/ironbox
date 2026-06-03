@@ -27,6 +27,7 @@ js/{store, timebox, calendar, gcal, app}.js
 ### Added
 - **작업별 세부 메모** — 각 할 일에 📝 버튼 → 인라인 textarea로 멀티라인 메모 작성·저장(Firestore, 디바운스). 메모 유무는 📝 아이콘 농도로 표시. 메모는 **검색 대상에 포함**, **업무일지 텍스트(.txt)·Google 캘린더 설명**에 함께 출력, **타임라인 블록에 📝 표시**. 기존 데이터는 normalizeDay가 `note:""` 자동 보강(마이그레이션 불필요). 설계: [docs/superpowers/specs/2026-06-03-task-notes-design.md](docs/superpowers/specs/2026-06-03-task-notes-design.md). (store.js note 필드·검색, app.js 토글/펼침/가드/텍스트내보내기, timebox.js·gcal.js·style.css, SW v12→v13)
 - **주간 타임박스 플래너(읽기 전용)** — 헤더 `[일][주]` 토글로 전환. 7일 × 시간 그리드에 한 주 타임박스를 한눈에(오늘/주말/공휴일 강조, 겹침 가로분할). 요일·블록 클릭 → 그 날 '하루 보기'로 점프, 좌우 화살표 = 주 단위 이동. 신규 모듈 `js/weekview.js` + `Store.getDays(dates)`, SW v13→v14. 일요일 시작(기존 달력과 일관). 설계: [docs/superpowers/specs/2026-06-03-weekly-view-design.md](docs/superpowers/specs/2026-06-03-weekly-view-design.md).
+- **상세 할 일 추가 + 달력에서 추가** — 제목 + 세부 메모(여러 줄)를 한 번에 적는 상세 추가 모달. 인박스 `상세` 버튼(현재 날) / 달력 날짜 칸 `+`(그 날짜)로 진입. 다른 날 추가는 `getDay→push→saveDay`로 화면 안 건드리고 저장, 달력 점 갱신. `js/calendar.js` 셀 `+`+`onAdd`, `js/app.js` `openAddTask/submitAddTask`, SW v15→v16. 설계: [docs/superpowers/specs/2026-06-03-detailed-task-add-design.md](docs/superpowers/specs/2026-06-03-detailed-task-add-design.md).
 
 ### Fixed
 - **주간 뷰 피드백 반영** — (1) 세로 휠 스크롤 안 되던 문제: `.week-view`를 뷰포트 높이 고정 내부 스크롤 컨테이너로 변경(헤더 sticky 고정). (2) Big3↔일반 구분 약함: 주간 블록 색 분리(Big3=골드, 일반=네이비+골드 좌측바). (3) 한국 공휴일 **2026-06-03 지방선거** 추가(`calendar.js`). SW v14→v15.

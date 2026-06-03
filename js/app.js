@@ -10,7 +10,7 @@
   const STATUS_ORDER = ["do", "defer", "delegate", "delete"];
   const TAG_PRESETS = ["글쓰기", "이메일", "회의", "연락", "기획", "검토", "잡무", "공부"];
 
-  const state = { date: Store.todayStr(), day: null, filter: "all", selectedId: null, editingTaskId: null, openNoteId: null, view: "day", weekStart: null, calY: 0, calM: 0 };
+  const state = { date: Store.todayStr(), day: null, filter: "all", selectedId: null, editingTaskId: null, openNoteId: null, view: "day", weekStart: null, addDate: null, calY: 0, calM: 0 };
   let saveTimer = null;
 
   /* ---------------- 초기화 ---------------- */
@@ -509,10 +509,41 @@
     const marks = await Store.getMonthMarks(state.calY, state.calM);
     CalendarView.render($("#calendar"), {
       year: state.calY, month: state.calM, marks, today: Store.todayStr(), selected: state.date,
-      onPick: (date) => { $("#calendar-modal").hidden = true; setView("day"); loadDay(date); }
+      onPick: (date) => { $("#calendar-modal").hidden = true; setView("day"); loadDay(date); },
+      onAdd: (date) => openAddTask(date)
     });
   }
   function calShift(d) { state.calM += d; if (state.calM < 0) { state.calM = 11; state.calY--; } if (state.calM > 11) { state.calM = 0; state.calY++; } renderCalendar(); }
+
+  /* ---------------- 상세 할 일 추가 (모달) ---------------- */
+  function openAddTask(date) {
+    state.addDate = date;
+    const dt = new Date(date + "T00:00:00");
+    const dow = ["일", "월", "화", "수", "목", "금", "토"][dt.getDay()];
+    $("#addtask-title-label").textContent = `${dt.getMonth() + 1}월 ${dt.getDate()}일(${dow})에 할 일 추가`;
+    $("#addtask-title").value = ""; $("#addtask-note").value = "";
+    $("#addtask-submit").disabled = true;
+    $("#addtask-modal").hidden = false;
+    setTimeout(() => $("#addtask-title").focus(), 30);
+  }
+  async function submitAddTask() {
+    const { text, tags } = parseTags($("#addtask-title").value);
+    if (!text) return;
+    const memo = $("#addtask-note").value.trim();
+    if (state.addDate === state.date) {
+      const t = Store.newTask(text); t.tags = tags; t.note = memo;
+      state.day.tasks.push(t); saveNow(); render();
+    } else {
+      try {
+        const day = await Store.getDay(state.addDate);
+        const t = Store.newTask(text); t.tags = tags; t.note = memo;
+        day.tasks.push(t); await Store.saveDay(day);
+        if (!$("#calendar-modal").hidden) renderCalendar();
+      } catch (e) { console.error(e); toast("추가 실패 — 다시 시도해 주세요"); return; }
+    }
+    $("#addtask-modal").hidden = true;
+    toast("할 일을 추가했어요");
+  }
 
   function openSearch() {
     $("#search-modal").hidden = false; $("#search-input").value = "";
@@ -562,6 +593,7 @@
     bdBtn.disabled = true;
     bdInput.addEventListener("input", () => { bdBtn.disabled = !bdInput.value.trim(); });
     $("#braindump-form").addEventListener("submit", (e) => { e.preventDefault(); if (!bdInput.value.trim()) return; addTask(bdInput.value); bdInput.value = ""; bdBtn.disabled = true; bdInput.focus(); });
+    $("#add-detail-btn").onclick = () => openAddTask(state.date);
     document.querySelectorAll("#status-filters .chip").forEach((c) => c.addEventListener("click", () => { state.filter = c.dataset.f; render(); }));
 
     $("#cal-prev").onclick = () => calShift(-1);
@@ -574,6 +606,12 @@
     $("#search-close").onclick = () => ($("#search-modal").hidden = true);
     $("#search-input").addEventListener("input", doSearch);
     $("#search-modal").addEventListener("click", (e) => { if (e.target.id === "search-modal") e.currentTarget.hidden = true; });
+
+    $("#addtask-close").onclick = () => ($("#addtask-modal").hidden = true);
+    $("#addtask-modal").addEventListener("click", (e) => { if (e.target.id === "addtask-modal") e.currentTarget.hidden = true; });
+    $("#addtask-title").addEventListener("input", () => { $("#addtask-submit").disabled = !$("#addtask-title").value.trim(); });
+    $("#addtask-title").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitAddTask(); } });
+    $("#addtask-submit").onclick = submitAddTask;
 
     $("#open-menu").onclick = (e) => { e.stopPropagation(); toggleMenu(); };
     document.addEventListener("click", (e) => { if (!e.target.closest(".menu-wrap")) toggleMenu(false); });
@@ -602,7 +640,7 @@
 
     document.addEventListener("keydown", (e) => {
       if (e.target.matches("input,textarea,select")) return;
-      if (!$("#calendar-modal").hidden || !$("#search-modal").hidden) return;
+      if (!$("#calendar-modal").hidden || !$("#search-modal").hidden || !$("#addtask-modal").hidden) return;
       if (e.key === "ArrowLeft") state.view === "week" ? shiftWeek(-1) : loadDay(shiftDate(state.date, -1));
       if (e.key === "ArrowRight") state.view === "week" ? shiftWeek(+1) : loadDay(shiftDate(state.date, +1));
     });

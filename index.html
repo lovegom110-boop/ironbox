@@ -92,6 +92,7 @@
         <form id="braindump-form" class="braindump">
           <input id="braindump-input" type="text" placeholder="머릿속 할 일을 빠르게 적기 (Enter)" autocomplete="off" />
           <button type="submit" id="add-btn" class="btn-primary">추가</button>
+          <button type="button" id="add-detail-btn" class="ghost-btn" title="제목+세부 메모로 추가">상세</button>
         </form>
         <div class="filters" id="status-filters">
           <button class="chip active" data-f="all">전체</button>
@@ -156,6 +157,23 @@
         <button id="search-close" class="close-btn">✕</button>
       </div>
       <div id="search-results" class="search-results"></div>
+    </div>
+  </div>
+
+  <!-- 상세 할 일 추가 -->
+  <div id="addtask-modal" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <span id="addtask-title-label" class="modal-title">할 일 추가</span>
+        <button id="addtask-close" class="close-btn" type="button">✕</button>
+      </div>
+      <div class="addtask-body">
+        <input id="addtask-title" class="addtask-title-input" type="text" placeholder="할 일 제목 (#태그 가능)" autocomplete="off" />
+        <textarea id="addtask-note" class="addtask-note-input" placeholder="세부 메모 (선택, 여러 줄)"></textarea>
+        <div class="addtask-actions">
+          <button id="addtask-submit" class="btn-primary" type="button" disabled>추가</button>
+        </div>
+      </div>
     </div>
   </div>
 

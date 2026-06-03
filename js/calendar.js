@@ -82,7 +82,7 @@
     isRedDay(date, dow) { return dow === 0 || dow === 6 || !!KR_HOLIDAYS[date]; },
 
     render(container, opts) {
-      const { year, month, marks = {}, today, selected, onPick } = opts;
+      const { year, month, marks = {}, today, selected, onPick, onAdd } = opts;
       container.innerHTML = "";
 
       const grid = document.createElement("div");
@@ -119,6 +119,13 @@
         if (holiday) cell.title = holiday;
         cell.innerHTML = `<span>${d}</span>` + (marks[date] ? `<span class="cal-dot"></span>` : "");
         cell.addEventListener("click", () => onPick && onPick(date));
+        if (onAdd) {
+          const addb = document.createElement("button");
+          addb.type = "button"; addb.className = "cal-add"; addb.textContent = "+";
+          addb.title = "이 날에 할 일 추가";
+          addb.addEventListener("click", (e) => { e.stopPropagation(); onAdd(date); });
+          cell.appendChild(addb);
+        }
         grid.appendChild(cell);
       }
 
