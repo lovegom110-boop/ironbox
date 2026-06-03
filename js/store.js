@@ -165,10 +165,11 @@
       const hits = [];
       for (const d of all) {
         const inTasks = d.tasks.filter((t) => t.text.toLowerCase().includes(q) || (t.note && t.note.toLowerCase().includes(q)));
+        const inNotes = (d.notes || []).filter((n) => (n.title || "").toLowerCase().includes(q) || (n.body || "").toLowerCase().includes(q));
         const inWake = d.wakeNote && d.wakeNote.toLowerCase().includes(q);
         const inFb = d.feedback && d.feedback.toLowerCase().includes(q);
-        if (inTasks.length || inWake || inFb) {
-          hits.push({ date: d.date, tasks: inTasks, wake: inWake ? d.wakeNote : "", feedback: inFb ? d.feedback : "" });
+        if (inTasks.length || inNotes.length || inWake || inFb) {
+          hits.push({ date: d.date, tasks: inTasks, notes: inNotes, wake: inWake ? d.wakeNote : "", feedback: inFb ? d.feedback : "" });
         }
       }
       return hits.reverse(); // 최신 우선

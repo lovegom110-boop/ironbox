@@ -592,6 +592,7 @@
         const item = el("div", "sr-item");
         let html = `<div class="sr-date">${h.date.replace(/-/g, ".")}</div>`;
         h.tasks.forEach((t) => html += `<div class="sr-line"><span class="k">할일</span>${esc(t.text)}</div>`);
+        (h.notes || []).forEach((n) => html += `<div class="sr-line"><span class="k">노트</span>${esc(n.title || (n.body || "").replace(/[#*>`_~\-]/g, " ").replace(/\s+/g, " ").trim().slice(0, 40))}</div>`);
         if (h.wake) html += `<div class="sr-line"><span class="k">기상</span>${esc(h.wake)}</div>`;
         if (h.feedback) html += `<div class="sr-line"><span class="k">회고</span>${esc(h.feedback)}</div>`;
         item.innerHTML = html;

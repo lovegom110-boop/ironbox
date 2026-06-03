@@ -92,9 +92,9 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
 
 /* ===== 노트 (카드 학습정리) ===== */
 .notes-list{display:block}
-.notes-grid{column-count:2; column-gap:12px}
-@media (max-width:640px){ .notes-grid{column-count:1} }
-.note-card{break-inside:avoid; display:inline-block; width:100%; margin:0 0 12px; border:1px solid rgba(0,0,0,.06); border-radius:7px; padding:12px 14px; box-shadow:0 3px 10px rgba(0,0,0,.13); transform:rotate(-1deg); transition:transform .12s, box-shadow .12s}
+.notes-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; align-items:start}
+@media (max-width:640px){ .notes-grid{grid-template-columns:1fr} }
+.note-card{margin:0; border:1px solid rgba(0,0,0,.06); border-radius:7px; padding:12px 14px; box-shadow:0 3px 10px rgba(0,0,0,.13); transform:rotate(-1deg); transition:transform .12s, box-shadow .12s}
 .note-card:nth-child(even){transform:rotate(1.2deg)}
 .note-card:hover{transform:rotate(0); box-shadow:0 6px 18px rgba(0,0,0,.18)}
 .note-card.sticky-0{background:#fff7bd}
