@@ -28,6 +28,9 @@ js/lib/{easymde, marked, purify}  — 노트 마크다운(self-host)
 ### Added
 - **노트장 — 날짜와 무관한 학습 노트(원노트식 책갈피 탭 + WYSIWYG)** — 기존 하루별 포스트잇("오늘의 메모"로 라벨 변경)과 **별개**의 전체화면 노트 공간. 헤더 `노트` 버튼으로 진입(헤더·본문 숨김, 자체 `←닫기`). 상단 **책갈피 탭**=분류(전체/⭐즐겨찾기/사용자분류/미분류/+분류, 더블클릭→이름변경·삭제 시 안의 노트는 미분류로, 드래그 순서이동) + 상단바 전체검색·`+새 노트`. 본문 2단=왼쪽 노트목록(태그칩 필터, 핀 위·최근수정순·"n일 전") / 오른쪽 편집(제목·분류선택·#태그·⭐핀·삭제 + **Toast UI Editor** WYSIWYG, 표·체크리스트·코드 등). 저장은 마크다운(`getMarkdown`), 노트 전환·닫기 시 flush 저장. 모바일은 1열(목록↔편집 전환). 데이터는 **새 컬렉션 `users/{uid}/notebook`(노트 1개=문서 1개) + `notebookMeta/folders`**, `days`는 손대지 않음(마이그레이션 불필요). JSON·디스크 백업에 노트·폴더 포함. 신규 `js/notebook.js` + self-host `js/lib/toastui-editor-all.min.js`·`toastui-editor.min.css`(v3.2.2, MIT). `Store`에 getNotes/saveNote/deleteNote/getFolders/saveFolders·newStandaloneNote/newFolder·normalizeNote·export/import 확장. 하루 포스트잇은 EasyMDE 유지(공존). SW v20→v22. 설계: [docs/superpowers/specs/2026-06-07-notebook-design.md](docs/superpowers/specs/2026-06-07-notebook-design.md).
 
+### Changed
+- **즐겨찾기를 왼쪽 노트 목록에서 바로 켜고 끄기** — 기존엔 노트를 열고 편집기 안 「⭐ 즐겨찾기」를 눌러야만 켜졌고 목록엔 표시만 됐음. 이제 왼쪽 목록 각 노트에 ★ 별표(끔=☆ / 켬=★ 금색)를 두어 목록에서 바로 토글. 편집기 버튼·「즐겨찾기」 탭 카운트와 동기화(`togglePin`으로 일원화). SW v22→v23. (`js/notebook.js`, `css/style.css`)
+
 ## 2026-06-03
 
 ### Added

@@ -62,6 +62,17 @@
     clearTimeout(saveTimer);
     return global.Store.saveNote(n).then(renderList).catch(() => global.appToast && global.appToast("저장 실패"));
   }
+  // 즐겨찾기 토글 (목록 별표·편집기 버튼 공용). 편집기 버튼·탭 카운트까지 동기화.
+  function togglePin(n) {
+    if (!n) return Promise.resolve();
+    n.pinned = !n.pinned;
+    if (n.id === S.noteId) {                       // 열려 있는 노트면 편집기 버튼도 즉시 반영
+      const pin = root().querySelector(".nb-pin");
+      if (pin) { pin.classList.toggle("on", n.pinned); pin.textContent = n.pinned ? "⭐ 즐겨찾기" : "☆ 즐겨찾기"; }
+    }
+    return global.Store.saveNote(n).then(() => { renderList(); renderTabs(); })
+      .catch(() => global.appToast && global.appToast("저장 실패"));
+  }
 
   /* ---------------- 필터/정렬 ---------------- */
   function visibleNotes() {
@@ -188,7 +199,10 @@
       const item = el("div", "nb-item" + (S.noteId === n.id ? " active" : ""));
       const top = el("div", "nb-item-top");
       top.appendChild(el("span", "nb-item-title", (n.title || "").trim() || "(제목 없음)"));
-      if (n.pinned) top.appendChild(el("span", "nb-item-pin", "⭐"));
+      const star = el("span", "nb-item-star" + (n.pinned ? " on" : ""), n.pinned ? "★" : "☆");
+      star.title = n.pinned ? "즐겨찾기 해제" : "즐겨찾기에 추가";
+      star.onclick = (e) => { e.stopPropagation(); togglePin(n); };
+      top.appendChild(star);
       item.append(top, el("div", "nb-item-meta", timeAgo(n.updatedAt)));
       if ((n.tags || []).length) {
         const tl = el("div", "nb-item-tags");
@@ -232,7 +246,7 @@
     back.type = "button"; back.title = "목록"; back.onclick = () => root().classList.remove("nb-editing");
     const pin = el("button", "nb-pin" + (n.pinned ? " on" : ""), n.pinned ? "⭐ 즐겨찾기" : "☆ 즐겨찾기");
     pin.type = "button";
-    pin.onclick = () => { n.pinned = !n.pinned; pin.classList.toggle("on", n.pinned); pin.textContent = n.pinned ? "⭐ 즐겨찾기" : "☆ 즐겨찾기"; saveNoteNow(); };
+    pin.onclick = () => togglePin(n);
     const del = el("button", "row-btn danger", "삭제");
     del.type = "button"; del.onclick = () => deleteNote(n.id);
     head.append(back, el("span", "nb-editor-spacer"), pin, del);
