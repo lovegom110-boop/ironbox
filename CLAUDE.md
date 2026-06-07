@@ -12,7 +12,8 @@
 ```
 index.html · sw.js · manifest.json · vercel.json · icons/
 css/style.css
-js/{store, timebox, calendar, gcal, app}.js
+js/{store, timebox, calendar, gcal, weekview, notes, notebook, app, auth, firebase-init}.js
+js/lib/{easymde, marked, purify}  — 노트 마크다운(self-host)
 기획.md · DESIGN.md · README.md · CLAUDE.md(이 문서)
 ```
 
@@ -21,6 +22,11 @@ js/{store, timebox, calendar, gcal, app}.js
 # 변경 이력 (날짜별)
 
 > 날짜는 `YYYY-MM-DD` 한국 시각. 수정 시마다 위에서부터 새로 추가.
+
+## 2026-06-07
+
+### Added
+- **노트장 — 날짜와 무관한 학습 노트(원노트식 책갈피 탭 + WYSIWYG)** — 기존 하루별 포스트잇("오늘의 메모"로 라벨 변경)과 **별개**의 전체화면 노트 공간. 헤더 `노트` 버튼으로 진입(헤더·본문 숨김, 자체 `←닫기`). 상단 **책갈피 탭**=분류(전체/⭐즐겨찾기/사용자분류/미분류/+분류, 더블클릭→이름변경·삭제 시 안의 노트는 미분류로, 드래그 순서이동) + 상단바 전체검색·`+새 노트`. 본문 2단=왼쪽 노트목록(태그칩 필터, 핀 위·최근수정순·"n일 전") / 오른쪽 편집(제목·분류선택·#태그·⭐핀·삭제 + **Toast UI Editor** WYSIWYG, 표·체크리스트·코드 등). 저장은 마크다운(`getMarkdown`), 노트 전환·닫기 시 flush 저장. 모바일은 1열(목록↔편집 전환). 데이터는 **새 컬렉션 `users/{uid}/notebook`(노트 1개=문서 1개) + `notebookMeta/folders`**, `days`는 손대지 않음(마이그레이션 불필요). JSON·디스크 백업에 노트·폴더 포함. 신규 `js/notebook.js` + self-host `js/lib/toastui-editor-all.min.js`·`toastui-editor.min.css`(v3.2.2, MIT). `Store`에 getNotes/saveNote/deleteNote/getFolders/saveFolders·newStandaloneNote/newFolder·normalizeNote·export/import 확장. 하루 포스트잇은 EasyMDE 유지(공존). SW v20→v22. 설계: [docs/superpowers/specs/2026-06-07-notebook-design.md](docs/superpowers/specs/2026-06-07-notebook-design.md).
 
 ## 2026-06-03
 

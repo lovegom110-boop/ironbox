@@ -617,6 +617,20 @@
     $("#date-label").onclick = openCalendar;
     $("#view-day").onclick = () => setView("day");
     $("#view-week").onclick = () => setView("week");
+
+    /* 노트장 (날짜와 무관한 학습 노트) — 헤더·본문 숨기고 전체화면, 자체 ←닫기로 복귀 */
+    window.appToast = toast;
+    if (window.Notebook) {
+      Notebook.onClose = () => { const h = document.querySelector(".topbar"); if (h) h.hidden = false; setView(state._prevView || "day"); };
+      $("#open-notebook").onclick = () => {
+        if (Notebook.isOpen()) return;
+        state._prevView = state.view;
+        const h = document.querySelector(".topbar"); if (h) h.hidden = true;
+        document.querySelector("main").hidden = true;
+        $("#week-view").hidden = true;
+        Notebook.open();
+      };
+    }
     /* wake/feedback는 renderTextField가 내부에서 처리 */
     const bdInput = $("#braindump-input"), bdBtn = $("#add-btn");
     bdBtn.disabled = true;
@@ -674,6 +688,7 @@
 
     document.addEventListener("keydown", (e) => {
       if (e.target.matches("input,textarea,select")) return;
+      if (window.Notebook && Notebook.isOpen()) return;
       if (!$("#calendar-modal").hidden || !$("#search-modal").hidden || !$("#addtask-modal").hidden || !$("#note-modal").hidden) return;
       if (e.key === "ArrowLeft") state.view === "week" ? shiftWeek(-1) : loadDay(shiftDate(state.date, -1));
       if (e.key === "ArrowRight") state.view === "week" ? shiftWeek(+1) : loadDay(shiftDate(state.date, +1));

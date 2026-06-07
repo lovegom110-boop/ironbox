@@ -1,5 +1,5 @@
 /* 서비스워커 — 앱 셸 오프라인 캐시 (데이터는 캐시하지 않음, IndexedDB/파일에만 저장) */
-const CACHE = "elon-diary-v20";
+const CACHE = "elon-diary-v22";
 const SHELL = [
   "./",
   "./index.html",
@@ -15,7 +15,10 @@ const SHELL = [
   "./js/lib/purify.min.js",
   "./js/lib/easymde.min.js",
   "./js/lib/easymde.min.css",
+  "./js/lib/toastui-editor-all.min.js",
+  "./js/lib/toastui-editor.min.css",
   "./js/notes.js",
+  "./js/notebook.js",
   "./js/app.js",
   "./js/auth.js",
   "./manifest.json",

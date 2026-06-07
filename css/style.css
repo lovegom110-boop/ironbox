@@ -332,6 +332,80 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
   .task{flex-wrap:wrap}
 }
 
+/* ===================== 노트장 (날짜와 무관한 학습 노트, 원노트식 책갈피 탭) ===================== */
+.notes-view{position:fixed; inset:0; z-index:50; background:var(--bg); display:flex; flex-direction:column}
+.nb-topbar{flex:none; display:flex; align-items:center; gap:12px; padding:12px 18px; border-bottom:1px solid var(--line-soft); background:rgba(255,255,255,.92); backdrop-filter:saturate(1.4) blur(8px)}
+.nb-close{height:36px}
+.nb-brand{font-size:17px; font-weight:800; letter-spacing:-.02em}
+.nb-topbar-spacer{flex:1}
+.nb-search{width:230px; max-width:38vw; border:1px solid var(--line); border-radius:999px; padding:9px 14px; font-size:14px; outline:none; background:var(--bg)}
+.nb-search:focus{border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-soft)}
+.nb-newnote{height:38px; white-space:nowrap}
+
+/* 책갈피 탭 (분류) */
+.nb-tabs{flex:none; display:flex; align-items:flex-end; gap:3px; padding:8px 14px 0; overflow-x:auto; background:var(--bg-soft); border-bottom:1px solid var(--line)}
+.nb-tab{position:relative; bottom:-1px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; border:1px solid var(--line); border-bottom:none; background:#ededed; color:var(--ink-2); border-radius:10px 10px 0 0; padding:8px 14px; font-size:13.5px; font-weight:700; cursor:pointer}
+.nb-tab:hover{background:#e3e3e3}
+.nb-tab.active{background:var(--bg); color:var(--blue); border-color:var(--line); box-shadow:0 -2px 0 var(--blue) inset}
+.nb-tab.dragging{opacity:.4}
+.nb-tab-count{font-size:11px; font-weight:700; color:var(--ink-3); background:rgba(0,0,0,.06); border-radius:999px; padding:0 6px}
+.nb-tab.active .nb-tab-count{color:var(--blue); background:var(--blue-soft)}
+.nb-tab-add{background:transparent; border-style:dashed; color:var(--ink-3); font-weight:600}
+.nb-tab-add:hover{border-color:var(--blue); color:var(--blue); background:transparent}
+
+/* 본문 2단 (노트목록 | 편집) */
+.nb-body{flex:1; display:flex; min-height:0}
+.nb-listcol{width:300px; flex:none; border-right:1px solid var(--line-soft); display:flex; flex-direction:column; padding:12px; gap:8px; overflow:auto; background:var(--bg-soft)}
+.nb-tagbar{display:flex; flex-wrap:wrap; gap:5px}
+.nb-tagbar:empty{display:none}
+.nb-tag{border:1px solid var(--line); background:var(--bg); border-radius:999px; padding:3px 10px; font-size:12px; font-weight:600; color:var(--ink-2)}
+.nb-tag:hover{border-color:var(--ink)}
+.nb-tag.active{background:var(--blue); border-color:var(--blue); color:#fff}
+.nb-list{display:flex; flex-direction:column; gap:6px}
+.nb-item{border:1px solid var(--line-soft); border-radius:12px; padding:10px 12px; cursor:pointer; background:var(--bg)}
+.nb-item:hover{border-color:var(--blue)}
+.nb-item.active{border-color:var(--blue); box-shadow:0 0 0 2px var(--blue-soft)}
+.nb-item-top{display:flex; align-items:center; gap:6px}
+.nb-item-title{flex:1; min-width:0; font-weight:700; font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.nb-item-pin{font-size:12px}
+.nb-item-meta{font-size:11.5px; color:var(--ink-3); margin-top:2px}
+.nb-item-tags{display:flex; flex-wrap:wrap; gap:4px; margin-top:6px}
+.nb-item-tag{font-size:11px; color:var(--blue); background:var(--blue-soft); border-radius:6px; padding:1px 6px}
+.nb-empty{color:var(--ink-3); font-size:13.5px; line-height:1.6; padding:10px 4px}
+.nb-empty.small{padding:8px 4px}
+
+/* 편집 패널 (Toast UI Editor) */
+.nb-editor{flex:1; min-width:0; overflow:hidden; padding:18px 22px; display:flex; flex-direction:column; gap:10px}
+.nb-editor-head{display:flex; align-items:center; gap:8px}
+.nb-editor-back{display:none}
+.nb-editor-spacer{flex:1}
+.nb-pin{border:1px solid var(--line); background:var(--bg); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600; color:var(--ink-2)}
+.nb-pin.on{border-color:var(--blue); color:var(--blue); background:var(--blue-soft)}
+.nb-title-input{border:none; outline:none; font-size:24px; font-weight:800; letter-spacing:-.02em; padding:2px 0; background:transparent; color:var(--ink)}
+.nb-title-input::placeholder{color:var(--ink-3); font-weight:800}
+.nb-meta-row{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+.nb-folder-select{border:1px solid var(--line); border-radius:999px; padding:6px 12px; font-size:13px; font-weight:600; background:var(--bg); cursor:pointer; outline:none}
+.nb-folder-select:focus{border-color:var(--blue)}
+.nb-tags-input{flex:1; min-width:160px; border:1px solid var(--line); border-radius:999px; padding:6px 14px; font-size:13px; outline:none; background:var(--bg)}
+.nb-tags-input:focus{border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-soft)}
+.nb-editor-empty{margin:auto; text-align:center; color:var(--ink-3); display:flex; flex-direction:column; align-items:center; gap:12px; padding:40px 20px}
+.nb-editor-empty-icon{font-size:42px}
+.nb-editor-empty .btn-primary{height:42px}
+.nb-editor-tui{flex:1; min-height:0; border:1px solid var(--line-soft); border-radius:12px; overflow:hidden}
+.nb-editor-tui .toastui-editor-defaultUI{border:none; height:100%}
+
+/* 노트장 — 모바일 1열 (목록 ↔ 편집 전환) */
+@media (max-width:720px){
+  .nb-search{width:auto; flex:1; max-width:none}
+  .nb-body{flex-direction:column}
+  .nb-listcol{width:100%; flex:1; border-right:none}
+  .nb-editor{display:none}
+  .notes-view.nb-editing .nb-listcol{display:none}
+  .notes-view.nb-editing .nb-editor{display:flex}
+  .nb-editor-back{display:inline-flex}
+  .nb-title-input{font-size:21px}
+}
+
 /* 로그인 게이트 */
 .auth-gate{position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; background:#fff}
 .auth-card{text-align:center; padding:40px 28px; max-width:360px; width:90%}

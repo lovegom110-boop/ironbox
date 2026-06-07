@@ -28,6 +28,14 @@
   function daysCol() {
     return firebase.firestore().collection("users").doc(_uid()).collection("days");
   }
+  // 날짜와 무관한 학습 노트장 — 노트 하나당 문서 하나
+  function notebookCol() {
+    return firebase.firestore().collection("users").doc(_uid()).collection("notebook");
+  }
+  // 폴더 목록 메타 (단일 문서)
+  function folderDoc() {
+    return firebase.firestore().collection("users").doc(_uid()).collection("notebookMeta").doc("folders");
+  }
 
   /* ---------- 유틸 ---------- */
   function uid() {
@@ -45,6 +53,14 @@
   }
   function newNote(title) {
     return { id: uid(), title: (title || "").trim(), body: "", updatedAt: 0 };
+  }
+  // 날짜와 무관한 학습 노트(노트장). day.notes 의 포스트잇과는 별개 컬렉션.
+  function newStandaloneNote(folderId) {
+    const t = Date.now();
+    return { id: uid(), title: "", body: "", folderId: folderId || null, tags: [], pinned: false, createdAt: t, updatedAt: t };
+  }
+  function newFolder(name) {
+    return { id: "f_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6), name: (name || "").trim() };
   }
   function newTask(text) {
     return {
@@ -102,6 +118,8 @@
     todayStr,
     newTask,
     newNote,
+    newStandaloneNote,
+    newFolder,
     emptyDay,
 
     async init() {
@@ -175,29 +193,62 @@
       return hits.reverse(); // 최신 우선
     },
 
+    /* ---------- 노트장 (날짜와 무관한 학습 노트) ---------- */
+    async getNotes() {
+      const snap = await notebookCol().get();
+      return snap.docs.map((d) => normalizeNote(Object.assign({ id: d.id }, d.data())));
+    },
+    async saveNote(note) {
+      note.updatedAt = Date.now();
+      if (!note.createdAt) note.createdAt = note.updatedAt;
+      await notebookCol().doc(note.id).set(normalizeNote(note));
+      this._scheduleMirror();
+      return note;
+    },
+    async deleteNote(id) {
+      await notebookCol().doc(id).delete();
+      this._scheduleMirror();
+    },
+    async getFolders() {
+      const snap = await folderDoc().get();
+      const data = snap.exists ? snap.data() : null;
+      return data && Array.isArray(data.folders) ? data.folders : [];
+    },
+    async saveFolders(folders) {
+      await folderDoc().set({ folders: Array.isArray(folders) ? folders : [] });
+      this._scheduleMirror();
+      return folders;
+    },
+
     /* ---------- 내보내기 / 불러오기 ---------- */
     async exportAll() {
-      const days = await this.getAllDays();
-      return { app: "elon-diary", version: EXPORT_VERSION, exportedAt: new Date().toISOString(), days };
+      const [days, notes, folders] = await Promise.all([this.getAllDays(), this.getNotes(), this.getFolders()]);
+      return { app: "elon-diary", version: EXPORT_VERSION, exportedAt: new Date().toISOString(), days, notes, folders };
     },
 
     async importAll(obj, opts) {
       opts = opts || {};
       if (!obj || !Array.isArray(obj.days)) throw new Error("올바른 백업 파일이 아닙니다.");
       const days = obj.days.filter((d) => d && d.date);
-      // 안전: 클라우드 데이터를 절대 일괄 삭제하지 않는다. 날짜 키 기준 덮어쓰기(머지)만 한다.
+      const notes = Array.isArray(obj.notes) ? obj.notes.filter((n) => n && n.id) : [];
+      // 안전: 클라우드 데이터를 절대 일괄 삭제하지 않는다. 키 기준 덮어쓰기(머지)만 한다.
       let batch = firebase.firestore().batch();
       let inBatch = 0, total = 0;
+      const flush = async () => { if (inBatch) { await batch.commit(); batch = firebase.firestore().batch(); inBatch = 0; } };
       for (const d of days) {
         batch.set(daysCol().doc(d.date), normalizeDay(d));
         inBatch++; total++;
-        if (inBatch === 450) {            // Firestore 배치 한도 500 미만으로 분할
-          await batch.commit();
-          batch = firebase.firestore().batch();
-          inBatch = 0;
-        }
+        if (inBatch === 450) await flush();   // Firestore 배치 한도 500 미만으로 분할
       }
-      if (inBatch > 0) await batch.commit();
+      for (const n of notes) {
+        const nn = normalizeNote(n);
+        batch.set(notebookCol().doc(nn.id), nn);
+        inBatch++;
+        if (inBatch === 450) await flush();
+      }
+      await flush();
+      // 폴더 메타도 함께 복원 (배열이면 통째로 덮어쓰기)
+      if (Array.isArray(obj.folders)) await folderDoc().set({ folders: obj.folders });
       this._scheduleMirror();
       return total;
     },
@@ -309,6 +360,18 @@
     day.tasks = (d.tasks || []).map((t) => Object.assign(newTask(""), t));
     day.notes = Array.isArray(day.notes) ? day.notes : [];
     return day;
+  }
+  // 손상/구버전 노트 문서 안전화 — 누락 필드 기본값 보장
+  function normalizeNote(n) {
+    const note = Object.assign(newStandaloneNote(null), n);
+    note.title = typeof note.title === "string" ? note.title : "";
+    note.body = typeof note.body === "string" ? note.body : "";
+    note.folderId = note.folderId || null;
+    note.tags = Array.isArray(note.tags) ? note.tags.filter((t) => typeof t === "string") : [];
+    note.pinned = !!note.pinned;
+    note.createdAt = note.createdAt || note.updatedAt || Date.now();
+    note.updatedAt = note.updatedAt || note.createdAt;
+    return note;
   }
   function hasContent(d) {
     return (d.tasks && d.tasks.length) || (d.wakeNote && d.wakeNote.trim()) || (d.feedback && d.feedback.trim());

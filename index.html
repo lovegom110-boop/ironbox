@@ -10,6 +10,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendard-variable.min.css" />
   <link rel="stylesheet" href="js/lib/easymde.min.css" />
+  <link rel="stylesheet" href="js/lib/toastui-editor.min.css" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -36,6 +37,7 @@
       </span>
     </div>
     <div class="actions">
+      <button id="open-notebook" class="icon-btn" title="노트 (학습 정리)">노트</button>
       <button id="open-calendar" class="icon-btn" title="달력">달력</button>
       <button id="open-search" class="icon-btn" title="검색">검색</button>
       <div class="menu-wrap">
@@ -133,15 +135,18 @@
       <div id="tomorrow-field" class="text-field multi"></div>
     </section>
 
-    <!-- 노트 (하루별 카드 학습정리) — 맨 아래 -->
+    <!-- 오늘의 메모 (하루별 포스트잇 카드) — 맨 아래 -->
     <section class="card">
-      <div class="sec-head"><h2>노트</h2><span class="sec-sub">학습·공부 내용을 카드로 정리 (마크다운)</span></div>
+      <div class="sec-head"><h2>오늘의 메모</h2><span class="sec-sub">오늘 떠오른 메모를 포스트잇으로 (마크다운) · 날짜와 무관한 정리는 상단 「노트」</span></div>
       <div id="notes-list" class="notes-list"></div>
     </section>
   </main>
 
   <!-- 주간 뷰 (읽기 전용) -->
   <section id="week-view" class="week-view" hidden></section>
+
+  <!-- 노트장 (날짜와 무관한 학습 노트, 노션식 2단) — notebook.js가 내부 DOM 생성 -->
+  <section id="notes-view" class="notes-view" hidden></section>
 
   <!-- 달력 -->
   <div id="calendar-modal" class="modal" hidden>
@@ -220,7 +225,9 @@
   <script src="js/lib/marked.min.js"></script>
   <script src="js/lib/purify.min.js"></script>
   <script src="js/lib/easymde.min.js"></script>
+  <script src="js/lib/toastui-editor-all.min.js"></script>
   <script src="js/notes.js"></script>
+  <script src="js/notebook.js"></script>
   <script src="js/app.js"></script>
   <script src="js/auth.js"></script>
 </body>
