@@ -1,0 +1,18 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "widget-capability",
+  "description": "위젯 창이 자기 창을 제어하고(최소화/닫기/드래그) 외부 링크를 열 수 있게 — 원격(배포) 페이지에 권한 부여",
+  "windows": ["widget"],
+  "remote": {
+    "urls": ["https://ironbox-six.vercel.app"]
+  },
+  "permissions": [
+    "core:default",
+    "core:window:allow-minimize",
+    "core:window:allow-close",
+    "core:window:allow-hide",
+    "core:window:allow-show",
+    "core:window:allow-start-dragging",
+    "shell:allow-open"
+  ]
+}

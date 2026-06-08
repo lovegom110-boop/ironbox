@@ -1,0 +1,50 @@
+name: IRONBOX 위젯 설치파일 빌드 (Windows)
+
+# 깃허브가 클라우드(windows-latest)에서 .msi / .exe 를 대신 구워줍니다.
+# 내 PC에 Rust 설치 없이 설치파일을 받을 수 있어요.
+#  - 실행: GitHub 저장소 → Actions 탭 → 이 워크플로 선택 → "Run workflow" 버튼
+#  - 결과: 실행이 끝나면 그 실행 페이지 아래 Artifacts 에서 설치파일 zip 다운로드
+#  ⚠ 먼저 desktop/src-tauri/tauri.conf.json 과 capabilities/widget.json 의
+#     CHANGE-ME 를 내 배포 주소로 바꿔서 push 해야 "동작하는" 설치파일이 나옵니다.
+
+on:
+  workflow_dispatch: {}            # 손으로 실행
+  push:
+    tags:
+      - "widget-v*"                # 또는 widget-v1 같은 태그 push 시 자동
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Rust 설치
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 의존성 설치
+        working-directory: desktop
+        run: npm install
+
+      - name: 아이콘 생성
+        working-directory: desktop
+        run: npx tauri icon ../icons/icon-512.png
+
+      - name: 설치파일 빌드
+        working-directory: desktop
+        run: npm run build
+
+      - name: 설치파일 업로드 (여기서 다운로드)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ironbox-widget-windows-installer
+          path: |
+            desktop/src-tauri/target/release/bundle/msi/*.msi
+            desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
+          if-no-files-found: error

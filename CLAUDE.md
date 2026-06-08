@@ -11,6 +11,7 @@
 ## 파일 구조
 ```
 index.html · sw.js · manifest.json · vercel.json · icons/
+widget.html · widget.webmanifest · css/widget.css · js/widget.js   — 바탕화면 위젯(오늘 할 일)
 css/style.css
 js/{store, timebox, calendar, gcal, weekview, notes, notebook, app, auth, firebase-init}.js
 js/lib/{easymde, marked, purify}  — 노트 마크다운(self-host)
@@ -23,6 +24,11 @@ js/lib/{easymde, marked, purify}  — 노트 마크다운(self-host)
 
 > 날짜는 `YYYY-MM-DD` 한국 시각. 수정 시마다 위에서부터 새로 추가.
 
+## 2026-06-08
+
+### Added
+- **윈도우 바탕화면 위젯 — 오늘 할 일 보기·체크·빠른추가** — 기존 코드를 그대로 재활용한 **위젯 전용 화면** 신설. 오늘 날짜의 **Big3 + 할 일만** 작은 카드로 보여주고(타임박스/달력/회고는 제외, 그건 전체 앱), 완료 체크·`#태그` 빠른추가·"자세히 보기(전체 앱 열기)"까지. 데이터·로그인은 **본 앱과 동일한 Firestore(`users/{uid}/days`)·같은 구글 계정**을 공유 → 웹/폰과 양방향. 위젯은 `onSnapshot`으로 **실시간 반영**(웹→위젯 즉시; 위젯→웹은 본 앱이 새로고침/이동 시 반영). 신규 `widget.html` + `js/widget.js` + `css/widget.css`(Samsung 라이트 토큰 재사용: 화이트+삼성블루+Pretendard, 좌측 블루 바·둥근 체크·블랙 pill). **할 일이 많으면 '할 일 목록'만 스크롤**(헤더·Big3·빠른추가·자세히보기는 항상 고정 — flex로 목록 영역이 남는 높이를 흡수). "불러오는 중 → 로그인 → 위젯" 단계로 깜빡임 제거. 한글 줄바꿈 `word-break:keep-all`. `Store.init` 불필요(days는 Firestore, `saveDay`의 디스크미러는 핸들 없으면 no-op). 데스크톱화는 두 길: **① 빌드 없이**(배포→Edge "앱으로 설치"→PowerToys Always-On-Top, 회사PC OK; 더블클릭 런처 `위젯 실행.bat`=Edge `--app` 모드) / **② Tauri 설치파일(.msi/.exe)** — `desktop/`에 Tauri v2 프로젝트 스캐폴드 신설(원격 URL=배포된 widget.html 로드 → 구글 로그인 정상, 프레임리스·투명·항상위, `withGlobalTauri`+capabilities `remote`로 창컨트롤 IPC, `tauri-plugin-shell`로 외부열기). **Rust 미설치 환경 대비 GitHub Actions 클라우드 빌드** `.github/workflows/build-widget.yml`(windows-latest에서 .msi/.exe 굽고 artifact 업로드) 추가 — 로컬 Rust 없이 설치파일 획득. `widget.js`는 Tauri IPC 없으면 인앱 ─/✕ 숨김(브라우저/PWA/OS타이틀바에 위임). 빌드 안내: [desktop/README.md](desktop/README.md). ※ Rust 빌드는 이 작업 환경에서 직접 컴파일 불가(스캐폴드+클라우드 빌드까지 제공). Edge 설치용 `widget.webmanifest` 추가. SW 캐시 셸에 위젯 3종+manifest 추가, v24→v25. 설계: [docs/superpowers/specs/2026-06-08-windows-widget-design.md](docs/superpowers/specs/2026-06-08-windows-widget-design.md), 사용법: [docs/위젯-바탕화면에-올리기.md](docs/위젯-바탕화면에-올리기.md). ※ 렌더링은 헤드리스 Edge로 캡처해 디자인 확인 완료([__widget_preview.png](__widget_preview.png)).
+
 ## 2026-06-07
 
 ### Added
@@ -30,6 +36,9 @@ js/lib/{easymde, marked, purify}  — 노트 마크다운(self-host)
 
 ### Changed
 - **즐겨찾기를 왼쪽 노트 목록에서 바로 켜고 끄기** — 기존엔 노트를 열고 편집기 안 「⭐ 즐겨찾기」를 눌러야만 켜졌고 목록엔 표시만 됐음. 이제 왼쪽 목록 각 노트에 ★ 별표(끔=☆ / 켬=★ 금색)를 두어 목록에서 바로 토글. 편집기 버튼·「즐겨찾기」 탭 카운트와 동기화(`togglePin`으로 일원화). SW v22→v23. (`js/notebook.js`, `css/style.css`)
+
+### Security
+- **공용 PC 자동로그인(세션 잔존) 노출 차단** — (1) 구글 로그인 시 `prompt: select_account` 강제로 공용 크롬에서 조용한 자동 로그인 방지(`auth.js`). (2) **Firestore 보안규칙 신설**(`firestore.rules`): `users/{uid}/**`는 본인(`request.auth.uid==uid`)만 read/write, 그 외 전부 차단 — `firebase.json`에 firestore 설정 추가 + 배포 워크플로에 `firestore:rules` best-effort 단계 추가. SW v23→v24. ※ 근본 증상(타 기기 크롬에 로그인 세션 잔존)은 그 기기에서 로그아웃으로 해소되며, 이는 웹 표준 "로그인 유지" 동작이지 데이터 격리 버그가 아님(클라이언트는 `users/{본인uid}`만 접근).
 
 ## 2026-06-03
 

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IRONBOX 위젯</title>
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="manifest" href="widget.webmanifest" />
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendard-variable.min.css" />
+  <link rel="stylesheet" href="css/widget.css" />
+</head>
+<body>
+  <!-- 로딩 (인증 상태 확인 동안, 깜빡임 방지) -->
+  <div id="w-loading" class="w-gate">
+    <div class="w-gate-brand"><span class="tick">⏱</span> IRONBOX</div>
+    <p class="w-gate-sub">불러오는 중…</p>
+  </div>
+
+  <!-- 로그인 게이트 -->
+  <div id="auth-gate" class="w-gate" hidden>
+    <div class="w-gate-brand"><span class="tick">⏱</span> IRONBOX</div>
+    <p class="w-gate-sub">구글 계정으로 로그인하면 오늘의 할 일이 바탕화면에 떠 있어요.</p>
+    <button id="w-signin" class="w-btn-primary">Google로 로그인</button>
+    <p id="w-auth-error" class="w-auth-error" hidden></p>
+  </div>
+
+  <!-- 위젯 본체 -->
+  <div id="widget" class="w-root" hidden>
+    <header class="w-head" data-tauri-drag-region>
+      <span class="w-date" id="w-date" data-tauri-drag-region><span class="tick">⏱</span>날짜</span>
+      <span class="w-winctl">
+        <button id="w-min" class="w-icon" title="작게">─</button>
+        <button id="w-close" class="w-icon danger" title="닫기">✕</button>
+      </span>
+    </header>
+
+    <section class="w-sec big3">
+      <div class="w-sec-head"><span class="w-bar"></span><span class="w-sec-title">오늘의 Big 3</span><span id="w-big3-count" class="w-sec-sub"></span></div>
+      <ul id="w-big3" class="w-list"></ul>
+    </section>
+    <section class="w-sec w-sec-grow">
+      <div class="w-sec-head"><span class="w-bar"></span><span class="w-sec-title">할 일</span><span id="w-task-count" class="w-sec-sub"></span></div>
+      <ul id="w-tasks" class="w-list w-list-scroll"></ul>
+    </section>
+
+    <form id="w-add-form" class="w-add">
+      <div class="w-add-wrap"><span class="w-add-plus">+</span><input id="w-add-input" type="text" placeholder="빠른 추가  ·  #태그 가능" autocomplete="off" /></div>
+    </form>
+
+    <footer class="w-foot">
+      <button id="w-open-full" class="w-link">자세히 보기 ↗</button>
+    </footer>
+  </div>
+
+  <div id="w-toast" class="w-toast" hidden></div>
+
+  <!-- 본 앱과 동일한 Firebase + 데이터 계층을 그대로 재사용 -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/firebase-init.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/widget.js"></script>
+</body>
+</html>

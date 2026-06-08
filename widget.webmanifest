@@ -1,0 +1,17 @@
+{
+  "name": "IRONBOX 위젯",
+  "short_name": "IRONBOX 위젯",
+  "description": "오늘의 Big 3와 할 일을 바탕화면에서 바로 보고 체크하는 작은 위젯.",
+  "lang": "ko",
+  "start_url": "/widget",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "orientation": "any",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
