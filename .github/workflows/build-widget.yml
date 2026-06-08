@@ -44,7 +44,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ironbox-widget-windows-installer
-          path: |
-            desktop/src-tauri/target/release/bundle/msi/*.msi
-            desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
+          path: desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
           if-no-files-found: error
