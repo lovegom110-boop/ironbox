@@ -33,8 +33,15 @@ button{font-family:inherit; cursor:pointer; color:inherit; border:none; backgrou
   display:flex; align-items:center; justify-content:space-between;
   padding:14px 16px 11px; flex:none;
 }
-.w-date{ font-size:15px; font-weight:800; letter-spacing:-.02em; color:var(--ink); }
+.w-datenav{ display:flex; align-items:center; gap:1px; min-width:0; }
+.w-nav{ width:22px; height:26px; border-radius:7px; color:var(--ink-3); font-size:19px; line-height:1; display:flex; align-items:center; justify-content:center; transition:background .12s,color .12s; }
+.w-nav:hover{ background:var(--bg-soft); color:var(--ink); }
+.w-date{ font-size:15px; font-weight:800; letter-spacing:-.02em; color:var(--ink); padding:3px 6px; border-radius:8px; white-space:nowrap; transition:background .12s,color .12s; }
+.w-date:hover{ background:var(--bg-soft); }
+.w-date.other{ color:var(--blue); }
 .w-date .tick{ color:var(--blue); margin-right:5px; }
+.w-today{ margin-left:5px; font-size:11px; font-weight:700; color:var(--blue); background:var(--blue-soft); padding:4px 10px; border-radius:999px; transition:filter .12s; }
+.w-today:hover{ filter:brightness(.96); }
 .w-winctl{ display:flex; gap:1px; }
 .w-icon{
   width:26px; height:26px; border-radius:7px; color:var(--ink-3);

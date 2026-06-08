@@ -27,7 +27,12 @@
   <!-- 위젯 본체 -->
   <div id="widget" class="w-root" hidden>
     <header class="w-head" data-tauri-drag-region>
-      <span class="w-date" id="w-date" data-tauri-drag-region><span class="tick">⏱</span>날짜</span>
+      <span class="w-datenav">
+        <button id="w-prev" class="w-nav" type="button" title="이전 날">‹</button>
+        <button id="w-date" class="w-date" type="button" title="오늘로"><span class="tick">⏱</span>날짜</button>
+        <button id="w-next" class="w-nav" type="button" title="다음 날">›</button>
+        <button id="w-today" class="w-today" type="button" title="오늘로" hidden>오늘</button>
+      </span>
       <span class="w-winctl">
         <button id="w-min" class="w-icon" title="작게">─</button>
         <button id="w-close" class="w-icon danger" title="닫기">✕</button>

@@ -25,7 +25,8 @@
   //   시스템 기본 브라우저에서 전체 앱이 열린다.
   const FULL_APP_URL = "https://ironbox-six.vercel.app/";
 
-  let today = null;       // "YYYY-MM-DD"
+  let today = null;       // 실제 오늘 "YYYY-MM-DD"
+  let viewDate = null;    // 현재 보고 있는 날짜 "YYYY-MM-DD"
   let currentDay = null;  // 최신 스냅샷의 day 객체
   let unsub = null;       // onSnapshot 해제 함수
 
@@ -59,19 +60,31 @@
     const dow = ["일", "월", "화", "수", "목", "금", "토"][new Date(y, m - 1, d).getDay()];
     return `${m}월 ${d}일 (${dow})`;
   }
+  function shiftDate(dateStr, delta) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const dt = new Date(y, m - 1, d + delta);
+    const mm = String(dt.getMonth() + 1).padStart(2, "0");
+    const dd = String(dt.getDate()).padStart(2, "0");
+    return `${dt.getFullYear()}-${mm}-${dd}`;
+  }
 
   /* ---------- 실시간 구독 ---------- */
   function subscribe() {
-    today = Store.todayStr();
     if (unsub) { unsub(); unsub = null; }
-    unsub = dayRef(today).onSnapshot(
-      (snap) => { currentDay = normalizeDay(today, snap.exists ? snap.data() : null); render(); },
+    const d = viewDate;
+    unsub = dayRef(d).onSnapshot(
+      (snap) => { currentDay = normalizeDay(d, snap.exists ? snap.data() : null); render(); },
       (err) => { console.warn("구독 실패:", err); toast("불러오기 실패"); }
     );
   }
-  // 자정 넘김 / 창 다시 포커스 시 오늘 날짜 재확인
+  function goToDate(date) { viewDate = date; subscribe(); }
+  // 자정 넘김 / 창 다시 포커스 시 오늘 재확인 (오늘을 보고 있었으면 따라서 갱신)
   function checkDateRoll() {
-    if (today && Store.todayStr() !== today) subscribe();
+    const t = Store.todayStr();
+    if (t === today) return;
+    const wasToday = (viewDate === today);
+    today = t;
+    if (wasToday) { viewDate = t; subscribe(); } else { render(); }
   }
 
   /* ---------- 저장 ---------- */
@@ -121,7 +134,11 @@
   }
   function render() {
     if (!currentDay) return;
-    $("#w-date").innerHTML = '<span class="tick">⏱</span>' + fmtDate(today);
+    const isToday = (viewDate === today);
+    const dateBtn = $("#w-date");
+    dateBtn.innerHTML = '<span class="tick">⏱</span>' + fmtDate(viewDate);
+    dateBtn.classList.toggle("other", !isToday);
+    $("#w-today").hidden = isToday;
 
     const big3 = currentDay.tasks.filter((t) => t.isBig3);
     const tasks = currentDay.tasks.filter((t) => !t.isBig3);
@@ -133,7 +150,7 @@
 
     const tl = $("#w-tasks"); tl.innerHTML = "";
     if (tasks.length) tasks.forEach((t) => tl.appendChild(taskRow(t)));
-    else tl.appendChild(emptyHint("아래 칸에 오늘 할 일을 적어보세요."));
+    else tl.appendChild(emptyHint("아래 칸에 할 일을 적어보세요."));
     $("#w-task-count").textContent = tasks.length ? `${tasks.filter((t) => t.done).length} / ${tasks.length}` : "";
   }
 
@@ -166,7 +183,14 @@
   /* ---------- 부트 ---------- */
   function boot() {
     wireWindowControls();
+    today = Store.todayStr();
+    viewDate = today;
     $("#w-open-full").onclick = openFullApp;
+    $("#w-prev").onclick = () => goToDate(shiftDate(viewDate, -1));
+    $("#w-next").onclick = () => goToDate(shiftDate(viewDate, 1));
+    const goToday = () => { if (viewDate !== today) goToDate(today); };
+    $("#w-date").onclick = goToday;
+    $("#w-today").onclick = goToday;
     $("#w-add-form").addEventListener("submit", (e) => {
       e.preventDefault();
       const inp = $("#w-add-input");
@@ -209,7 +233,8 @@
 
   firebase.auth().onAuthStateChanged((user) => {
     if (user) {
-      if (!booted) { booted = true; boot(); } else { subscribe(); }
+      if (!booted) { booted = true; boot(); }
+      else { today = Store.todayStr(); viewDate = today; subscribe(); }
       show("widget");
     } else {
       if (unsub) { unsub(); unsub = null; }
