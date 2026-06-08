@@ -108,6 +108,23 @@
     render();
     persist();
   }
+  function toggleBig3(id) {
+    const t = currentDay.tasks.find((x) => x.id === id);
+    if (!t) return;
+    if (!t.isBig3 && currentDay.tasks.filter((x) => x.isBig3).length >= 3) { toast("Big 3는 최대 3개예요"); return; }
+    t.isBig3 = !t.isBig3;
+    render();
+    persist();
+  }
+  function addBig3(raw) {
+    const { text, tags } = parseTags(raw);
+    if (!text) return;
+    if (currentDay.tasks.filter((x) => x.isBig3).length >= 3) { toast("Big 3는 최대 3개예요"); return; }
+    const t = Store.newTask(text); t.tags = tags; t.isBig3 = true;
+    currentDay.tasks.push(t);
+    render();
+    persist();
+  }
 
   /* ---------- 렌더 ---------- */
   function taskRow(t) {
@@ -122,8 +139,29 @@
     const span = document.createElement("span");
     span.className = "w-item-text";
     span.textContent = t.text || "(제목 없음)";
+    const star = document.createElement("button");
+    star.className = "w-star" + (t.isBig3 ? " on" : "");
+    star.type = "button";
+    star.title = t.isBig3 ? "Big 3에서 빼기" : "Big 3로 올리기";
+    star.textContent = t.isBig3 ? "★" : "☆";
+    star.onclick = () => toggleBig3(t.id);
     li.appendChild(cb);
     li.appendChild(span);
+    li.appendChild(star);
+    return li;
+  }
+  function big3AddRow() {
+    const li = document.createElement("li");
+    li.className = "w-add-slot";
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "w-big3-input";
+    inp.placeholder = "+ Big 3 추가";
+    inp.autocomplete = "off";
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); const v = inp.value.trim(); if (!v) return; inp.value = ""; addBig3(v); }
+    });
+    li.appendChild(inp);
     return li;
   }
   function emptyHint(msg) {
@@ -143,9 +181,19 @@
     const big3 = currentDay.tasks.filter((t) => t.isBig3);
     const tasks = currentDay.tasks.filter((t) => !t.isBig3);
 
-    const b3 = $("#w-big3"); b3.innerHTML = "";
-    if (big3.length) big3.forEach((t) => b3.appendChild(taskRow(t)));
-    else b3.appendChild(emptyHint("핵심 3가지는 전체 앱에서 정해보세요."));
+    const b3 = $("#w-big3");
+    const oldIn = b3.querySelector(".w-big3-input");          // 스냅샷 재렌더 중 입력 보존
+    const pendVal = oldIn ? oldIn.value : null;
+    const pendFocus = oldIn && document.activeElement === oldIn;
+    b3.innerHTML = "";
+    big3.forEach((t) => b3.appendChild(taskRow(t)));
+    if (big3.length < 3) {
+      const row = big3AddRow();
+      b3.appendChild(row);
+      const ni = row.querySelector(".w-big3-input");
+      if (pendVal) ni.value = pendVal;
+      if (pendFocus) { ni.focus(); const L = ni.value.length; try { ni.setSelectionRange(L, L); } catch (_) {} }
+    }
     $("#w-big3-count").textContent = big3.length ? `${big3.filter((t) => t.done).length} / ${big3.length}` : "";
 
     const tl = $("#w-tasks"); tl.innerHTML = "";
