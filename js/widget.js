@@ -179,16 +179,33 @@
   }
 
   /* ---------- 로그인 ---------- */
-  $("#w-signin").addEventListener("click", () => {
+  function showAuthError(e) {
+    if (!e) return;
+    const el = $("#w-auth-error");
+    el.textContent = "로그인 실패: " + (e.message ? e.message : e);
+    el.hidden = false;
+  }
+  function startSignIn() {
     $("#w-auth-error").hidden = true;
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
+    // 데스크톱 앱(WebView)·일부 브라우저는 팝업이 막힘(auth/popup-blocked) → 리다이렉트 로그인으로 자동 전환
     firebase.auth().signInWithPopup(provider).catch((e) => {
-      const el = $("#w-auth-error");
-      el.textContent = "로그인 실패: " + (e && e.message ? e.message : e);
-      el.hidden = false;
+      const code = e && e.code;
+      if (code === "auth/popup-blocked" ||
+          code === "auth/operation-not-supported-in-this-environment" ||
+          code === "auth/popup-closed-by-user" ||
+          code === "auth/cancelled-popup-request") {
+        firebase.auth().signInWithRedirect(provider).catch(showAuthError);
+      } else {
+        showAuthError(e);
+      }
     });
-  });
+  }
+  $("#w-signin").addEventListener("click", startSignIn);
+
+  // 리다이렉트 로그인 후 돌아왔을 때 에러만 표시(성공 시 onAuthStateChanged가 화면 전환)
+  firebase.auth().getRedirectResult().catch(showAuthError);
 
   firebase.auth().onAuthStateChanged((user) => {
     if (user) {
