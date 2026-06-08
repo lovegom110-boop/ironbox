@@ -92,6 +92,12 @@ button{font-family:inherit; cursor:pointer; color:inherit; border:none; backgrou
 .w-star:hover{ background:var(--bg-soft); color:var(--blue); }
 .w-star.on{ color:var(--blue); }
 .w-star:active{ transform:scale(.88); }
+.w-grip{ flex:none; width:16px; align-self:stretch; color:#cfd2db; font-size:13px; line-height:1; display:flex; align-items:center; justify-content:center; cursor:grab; transition:color .12s; }
+.w-grip:hover{ color:var(--ink-3); }
+.w-grip:active{ cursor:grabbing; }
+.w-item.w-dragging{ opacity:.4; }
+.w-item.w-ro-before{ box-shadow:inset 0 2px 0 var(--blue); }
+.w-item.w-ro-after{ box-shadow:inset 0 -2px 0 var(--blue); }
 .w-add-slot{ padding:3px 4px 2px; }
 .w-big3-input{ width:100%; border:1px dashed var(--line); border-radius:8px; padding:6px 10px; font-size:13px; font-family:inherit; color:var(--ink); background:transparent; outline:none; -webkit-user-select:text; user-select:text; transition:border-color .12s,box-shadow .12s; }
 .w-big3-input::placeholder{ color:var(--ink-3); }

@@ -29,6 +29,7 @@
   let viewDate = null;    // 현재 보고 있는 날짜 "YYYY-MM-DD"
   let currentDay = null;  // 최신 스냅샷의 day 객체
   let unsub = null;       // onSnapshot 해제 함수
+  let wDragId = null;     // 순서변경 드래그 중인 할 일 id
 
   /* ---------- 유틸 (app.js parseTags 와 동일 규칙) ---------- */
   function parseTags(raw) {
@@ -125,11 +126,47 @@
     render();
     persist();
   }
+  function clearWMarks() {
+    const ul = $("#w-tasks");
+    if (ul) ul.querySelectorAll(".w-item.w-ro-before, .w-item.w-ro-after").forEach((el) => el.classList.remove("w-ro-before", "w-ro-after"));
+  }
+  // 할 일 순서변경 — day.tasks 안에서 id 기준 이동(Big3 위치는 그대로). 위젯·웹앱 공통 의미.
+  function reorderW(dragId, targetId, before) {
+    if (dragId === targetId) return;
+    const tasks = currentDay.tasks;
+    const from = tasks.findIndex((t) => t.id === dragId); if (from < 0) return;
+    const [m] = tasks.splice(from, 1);
+    const to = tasks.findIndex((t) => t.id === targetId);
+    if (to < 0) tasks.push(m); else tasks.splice(before ? to : to + 1, 0, m);
+    render();
+    persist();
+  }
 
   /* ---------- 렌더 ---------- */
-  function taskRow(t) {
+  function taskRow(t, reorderable) {
     const li = document.createElement("li");
     li.className = "w-item" + (t.done ? " done" : "");
+    if (reorderable) {
+      const grip = document.createElement("button");
+      grip.className = "w-grip"; grip.type = "button"; grip.title = "끌어서 순서 변경"; grip.textContent = "⠿";
+      grip.draggable = true;
+      grip.addEventListener("dragstart", (e) => { wDragId = t.id; li.classList.add("w-dragging"); e.dataTransfer.effectAllowed = "move"; });
+      grip.addEventListener("dragend", () => { wDragId = null; li.classList.remove("w-dragging"); clearWMarks(); });
+      li.addEventListener("dragover", (e) => {
+        if (wDragId == null || wDragId === t.id) return;
+        e.preventDefault();
+        const r = li.getBoundingClientRect();
+        const before = (e.clientY - r.top) < r.height / 2;
+        clearWMarks(); li.classList.add(before ? "w-ro-before" : "w-ro-after");
+      });
+      li.addEventListener("drop", (e) => {
+        if (wDragId == null) return;
+        e.preventDefault();
+        const before = li.classList.contains("w-ro-before");
+        clearWMarks(); reorderW(wDragId, t.id, before);
+      });
+      li.appendChild(grip);
+    }
     const cb = document.createElement("button");
     cb.className = "w-check" + (t.done ? " on" : "");
     cb.type = "button";
@@ -197,7 +234,7 @@
     $("#w-big3-count").textContent = big3.length ? `${big3.filter((t) => t.done).length} / ${big3.length}` : "";
 
     const tl = $("#w-tasks"); tl.innerHTML = "";
-    if (tasks.length) tasks.forEach((t) => tl.appendChild(taskRow(t)));
+    if (tasks.length) tasks.forEach((t) => tl.appendChild(taskRow(t, true)));
     else tl.appendChild(emptyHint("아래 칸에 할 일을 적어보세요."));
     $("#w-task-count").textContent = tasks.length ? `${tasks.filter((t) => t.done).length} / ${tasks.length}` : "";
   }

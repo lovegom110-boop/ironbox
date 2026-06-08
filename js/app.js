@@ -304,6 +304,26 @@
     if (t.id === state.selectedId) li.classList.add("selected");
     if (t.plannedStart != null) li.classList.add("placed");
 
+    const grip = el("button", "task-grip", "⠿");
+    grip.title = "끌어서 순서 변경";
+    grip.draggable = true;
+    grip.addEventListener("pointerdown", (e) => e.stopPropagation());   // 타임라인 배치 드래그와 분리
+    grip.addEventListener("dragstart", (e) => { reorderId = t.id; li.classList.add("reordering"); e.dataTransfer.effectAllowed = "move"; });
+    grip.addEventListener("dragend", () => { reorderId = null; li.classList.remove("reordering"); clearReorderMarks(); });
+    li.addEventListener("dragover", (e) => {
+      if (reorderId == null || reorderId === t.id) return;
+      e.preventDefault();
+      const r = li.getBoundingClientRect();
+      const before = (e.clientY - r.top) < r.height / 2;
+      clearReorderMarks(); li.classList.add(before ? "ro-before" : "ro-after");
+    });
+    li.addEventListener("drop", (e) => {
+      if (reorderId == null) return;
+      e.preventDefault();
+      const before = li.classList.contains("ro-before");
+      clearReorderMarks(); reorderTask(reorderId, t.id, before);
+    });
+
     const check = document.createElement("input");
     check.type = "checkbox"; check.className = "task-check"; check.checked = !!t.done;
     check.title = "완료 토글";
@@ -337,7 +357,7 @@
     del.title = "삭제";
     del.onclick = () => removeTask(t.id);
 
-    li.append(check, main, star, noteBtn, edit, del);
+    li.append(grip, check, main, star, noteBtn, edit, del);
 
     if (state.openNoteId === t.id) {
       const panel = el("div", "task-note");
@@ -352,6 +372,20 @@
       setTimeout(() => ta.focus(), 0);
     }
     return li;
+  }
+
+  function clearReorderMarks() {
+    $("#task-list").querySelectorAll(".task.ro-before, .task.ro-after").forEach((x) => x.classList.remove("ro-before", "ro-after"));
+  }
+  // 할 일 순서변경 — day.tasks 안에서 id 기준 이동(타임라인 배치 드래그와 별개, 핸들로만)
+  function reorderTask(dragId, targetId, before) {
+    if (dragId === targetId) return;
+    const tasks = state.day.tasks;
+    const from = tasks.findIndex((t) => t.id === dragId); if (from < 0) return;
+    const [m] = tasks.splice(from, 1);
+    const to = tasks.findIndex((t) => t.id === targetId);
+    if (to < 0) tasks.push(m); else tasks.splice(before ? to : to + 1, 0, m);
+    saveNow(); render();
   }
 
   function renderTimeline() {
@@ -696,7 +730,7 @@
   }
 
   /* ---------------- 타임라인 드래그 ---------------- */
-  let drag = null, ghostEl = null, createEl = null;
+  let drag = null, ghostEl = null, createEl = null, reorderId = null;
   const tlEl = () => $("#timeline");
   function ptSlot(y) { const r = tlEl().getBoundingClientRect(); return Math.max(0, Math.min(TimeBox.SLOTS - 1, Math.floor((y - r.top) / TimeBox.ROW_H))); }
   function overTL(x, y) { const r = tlEl().getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; }
