@@ -27,6 +27,7 @@ js/lib/{easymde, marked, purify}  — 노트 마크다운(self-host)
 ## 2026-06-09
 
 ### Added
+- **위젯 시작 시 자동실행 토글(PWA용)** — `자동실행 토글.bat` 더블클릭 한 번으로 Windows 시작프로그램 등록을 켜고/끄기. 크롬에 "앱으로 설치"된 위젯 바로가기(`...\Start Menu\Programs\Chrome 앱\IRONBOX 위젯.lnk`)를 시작프로그램 폴더(`shell:startup`)에 복사/삭제하는 방식(관리자 권한 불필요·되돌리기 쉬움). 실제 로직은 `autostart-toggle.ps1`(한글 깨짐 방지 위해 **UTF-8 BOM** 저장), `.bat`은 ASCII 런처. 현재 상태를 콘솔 글자로 안내. ※ 웹 PWA는 브라우저 샌드박스라 위젯 창 *안*에 토글을 넣는 건 불가 — 그건 Tauri .exe 길에서만 가능. 안내: [docs/위젯-바탕화면에-올리기.md](docs/위젯-바탕화면에-올리기.md).
 - **위젯 — 할 일·Big3 더블클릭 인라인 수정** — 위젯에서 글자를 더블클릭하면 그 자리가 입력칸으로 바뀌어 제목·`#태그`를 바로 수정(Enter=저장 / Esc=취소 / 칸 벗어남=저장). 같은 Firestore라 웹·폰에 즉시 반영. 위젯은 `onSnapshot` 실시간 재렌더라 **편집 중엔 render() 를 멈추는 mid-edit 가드**(`editingId` + `[data-edit]`)로 입력 소실 방지, 커밋은 스냅샷 교체 대비 id로 live task 재탐색 후 저장. 신규 `startEditW`/`taskToInput`(app.js와 동일 규칙) + `.w-edit-input`(파란 테두리·포커스 링, 글자 자리 그대로 flex). (js/widget.js, css/widget.css)
 
 ### Fixed
