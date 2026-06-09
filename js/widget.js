@@ -30,6 +30,7 @@
   let currentDay = null;  // 최신 스냅샷의 day 객체
   let unsub = null;       // onSnapshot 해제 함수
   let wDragId = null;     // 순서변경 드래그 중인 할 일 id
+  let editingId = null;   // 인라인 더블클릭 수정 중인 할 일 id
 
   /* ---------- 유틸 (app.js parseTags 와 동일 규칙) ---------- */
   function parseTags(raw) {
@@ -38,6 +39,11 @@
       .replace(/#([^\s#]+)/g, (m, tag) => { tags.push(tag); return " "; })
       .replace(/\s+/g, " ").trim();
     return { text, tags: [...new Set(tags)] };
+  }
+  // app.js taskToInput 과 동일 — 편집칸에 "제목 #태그…" 형태로 되돌려 보여준다(태그도 함께 수정).
+  function taskToInput(t) {
+    const tags = (t.tags && t.tags.length) ? t.tags : (t.category ? [t.category] : []);
+    return tags.length ? (t.text + " " + tags.map((x) => "#" + x).join(" ")) : t.text;
   }
   // store.js normalizeDay 와 동일 패턴 (Store.emptyDay/newTask 재사용)
   function normalizeDay(date, data) {
@@ -141,6 +147,40 @@
     render();
     persist();
   }
+  // 더블클릭 인라인 수정 — 글자(span)를 입력칸으로 바꿔 제목·#태그를 편집.
+  //  Enter=저장 / Esc=취소 / 칸 벗어남(blur)=저장. 편집 중 render() 는 가드로 멈춰 입력 보존.
+  function startEditW(id, span) {
+    const t = currentDay && currentDay.tasks.find((x) => x.id === id);
+    if (!t || !span) return;
+    editingId = id;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "w-edit-input";
+    input.dataset.edit = "1";
+    input.value = taskToInput(t);
+    span.replaceWith(input);
+    input.focus(); input.select();
+    let done = false;
+    const commit = (save) => {
+      if (done) return; done = true;
+      editingId = null;
+      if (save) {
+        const { text, tags } = parseTags(input.value);
+        // 편집 중 스냅샷으로 currentDay 가 교체됐을 수 있어 커밋 시점에 id로 재탐색
+        const live = currentDay && currentDay.tasks.find((x) => x.id === id);
+        if (live && text && (text !== live.text || tags.join(",") !== (live.tags || []).join(","))) {
+          live.text = text; live.tags = tags; live.category = "";
+          persist();
+        }
+      }
+      render();
+    };
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); commit(true); }
+      else if (e.key === "Escape") { e.preventDefault(); commit(false); }
+    });
+    input.addEventListener("blur", () => commit(true));
+  }
 
   /* ---------- 렌더 ---------- */
   function taskRow(t, reorderable) {
@@ -176,6 +216,8 @@
     const span = document.createElement("span");
     span.className = "w-item-text";
     span.textContent = t.text || "(제목 없음)";
+    span.title = "더블클릭하여 수정";
+    span.ondblclick = () => startEditW(t.id, span);
     const star = document.createElement("button");
     star.className = "w-star" + (t.isBig3 ? " on" : "");
     star.type = "button";
@@ -209,6 +251,8 @@
   }
   function render() {
     if (!currentDay) return;
+    // mid-edit 가드: 더블클릭 수정 중이면 재구축 X (들어온 스냅샷이 입력칸을 지우지 않게)
+    if (editingId != null && document.querySelector("[data-edit]")) return;
     const isToday = (viewDate === today);
     const dateBtn = $("#w-date");
     dateBtn.innerHTML = '<span class="tick">⏱</span>' + fmtDate(viewDate);

@@ -102,6 +102,8 @@ button{font-family:inherit; cursor:pointer; color:inherit; border:none; backgrou
 .w-big3-input{ width:100%; border:1px dashed var(--line); border-radius:8px; padding:6px 10px; font-size:13px; font-family:inherit; color:var(--ink); background:transparent; outline:none; -webkit-user-select:text; user-select:text; transition:border-color .12s,box-shadow .12s; }
 .w-big3-input::placeholder{ color:var(--ink-3); }
 .w-big3-input:focus{ border-style:solid; border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-soft); }
+/* 더블클릭 인라인 수정 입력칸 — 글자(span) 자리를 그대로 채운다 */
+.w-edit-input{ flex:1; min-width:0; margin:-3px 0; border:1px solid var(--blue); border-radius:7px; padding:4px 8px; font-size:13.5px; line-height:1.45; font-family:inherit; color:var(--ink); background:#fff; outline:none; box-shadow:0 0 0 3px var(--blue-soft); -webkit-user-select:text; user-select:text; }
 
 /* 빠른 추가 */
 .w-add{ flex:none; padding:10px 14px 4px; border-top:1px solid var(--line-soft); }

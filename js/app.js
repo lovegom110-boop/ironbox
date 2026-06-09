@@ -332,7 +332,8 @@
     const main = el("div", "task-main");
     const text = el("div", "task-text", t.text);
     text.title = "드래그하여 타임라인에 배치 · 더블클릭하여 수정";
-    text.ondblclick = () => startEditInline(t.id, text, "task-edit");
+    // 더블클릭 수정은 #task-list 위임 핸들러(bindUI)에서 처리 — 단일 클릭 재렌더로 노드가
+    // 교체돼 per-node ondblclick 은 성립하지 않기 때문.
     main.appendChild(text);
     const meta = el("div", "task-meta");
     const tags = taskTags(t);
@@ -788,6 +789,16 @@
       const li = e.target.closest(".task"); if (!li) return;
       const t = findTask(li.dataset.id); if (!t) return;
       drag = { type: "inbox", id: t.id, sx: e.clientX, sy: e.clientY, moved: false, text: t.text };
+    });
+    // 더블클릭 인라인 수정 — 위임 방식. 단일 클릭의 selectTask→render() 가 글자 노드를
+    // 매번 교체하므로 per-node ondblclick 은 성립하지 않는다. 재렌더에도 살아남는
+    // 컨테이너(#task-list)에서 dblclick 을 받아(두 click 의 공통 조상) 안정적으로 동작시킨다.
+    $("#task-list").addEventListener("dblclick", (e) => {
+      if (e.target.closest("input, select, textarea, button")) return;
+      if (!e.target.closest(".task-main")) return;
+      const li = e.target.closest(".task"); if (!li) return;
+      const textEl = li.querySelector(".task-text"); if (!textEl) return;
+      startEditInline(li.dataset.id, textEl, "task-edit");
     });
     document.addEventListener("pointermove", onDragMove);
     document.addEventListener("pointerup", onDragUp);

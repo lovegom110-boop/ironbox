@@ -24,6 +24,17 @@ js/lib/{easymde, marked, purify}  — 노트 마크다운(self-host)
 
 > 날짜는 `YYYY-MM-DD` 한국 시각. 수정 시마다 위에서부터 새로 추가.
 
+## 2026-06-09
+
+### Added
+- **위젯 — 할 일·Big3 더블클릭 인라인 수정** — 위젯에서 글자를 더블클릭하면 그 자리가 입력칸으로 바뀌어 제목·`#태그`를 바로 수정(Enter=저장 / Esc=취소 / 칸 벗어남=저장). 같은 Firestore라 웹·폰에 즉시 반영. 위젯은 `onSnapshot` 실시간 재렌더라 **편집 중엔 render() 를 멈추는 mid-edit 가드**(`editingId` + `[data-edit]`)로 입력 소실 방지, 커밋은 스냅샷 교체 대비 id로 live task 재탐색 후 저장. 신규 `startEditW`/`taskToInput`(app.js와 동일 규칙) + `.w-edit-input`(파란 테두리·포커스 링, 글자 자리 그대로 flex). (js/widget.js, css/widget.css)
+
+### Fixed
+- **본 앱 "할 일" 더블클릭 수정이 안 먹던 문제** — 코드상 `text.ondblclick`이 걸려 있었으나, 글자를 한 번 클릭하면 `selectTask()→render()`로 목록이 재구축되며 글자 노드가 교체돼 더블클릭(같은 노드 두 번)이 성립하지 않았다(Big3는 클릭 시 재렌더가 없어 정상). 재렌더에도 살아남는 컨테이너 `#task-list`에 **dblclick 위임 핸들러**를 달아(두 click의 공통 조상에서 발생) 안정 동작. 죽은 per-node `ondblclick`은 제거(제목 title 안내·"수정" 버튼은 유지). (js/app.js)
+
+### Changed
+- 서비스워커 캐시 `v29 → v30` (위 JS/CSS 반영). 설계: [docs/superpowers/specs/2026-06-09-doubleclick-edit-design.md](docs/superpowers/specs/2026-06-09-doubleclick-edit-design.md)
+
 ## 2026-06-08
 
 ### Added
