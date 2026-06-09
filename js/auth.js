@@ -19,6 +19,7 @@
   btn.addEventListener("click", function () {
     errEl.hidden = true;
     const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });   // 공용 브라우저에서 조용한 자동 로그인 방지 — 항상 계정 선택창
     firebase.auth().signInWithPopup(provider).catch(function (e) {
       showError("로그인 실패: " + (e && e.message ? e.message : e));
     });
