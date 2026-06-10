@@ -26,25 +26,14 @@
   }
   async function loadDay(date) {
     state.date = date;
-    let day = await Store.getDay(date);
-    // 오늘 + 빈 날짜인 경우에만 직전 기록일의 '미완료' 할 일 이월
-    let carriedCount = 0;
-    if (date === Store.todayStr() && day.tasks.length === 0) {
-      const all = await Store.getAllDays();
-      const prev = all.filter((d) => d.date < date && d.tasks.length).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
-      if (prev) {
-        const carry = prev.tasks
-          .filter((t) => !t.done)
-          .map((t) => { const n = Store.newTask(t.text); n.category = t.category; n.tags = (t.tags || []).slice(); return n; });
-        if (carry.length) { day.tasks = carry; await Store.saveDay(day); carriedCount = carry.length; }
-      }
-    }
+    // 오늘 + 빈 날짜면 직전 기록일의 '미완료' 할 일을 이월 (공용 규칙 — 위젯과 동일, store.js)
+    const { day, carried } = await Store.carryOverIfEmpty(date);
     state.day = day;
     state.selectedId = null;
     state.openNoteId = null;
     render();
     updateSaveStatus();
-    if (carriedCount) toast(`어제 미완료 ${carriedCount}개를 오늘로 이월했어요 (어제 체크한 일은 가져오지 않습니다)`);
+    if (carried) toast(`어제 미완료 ${carried}개를 오늘로 이월했어요 (어제 체크한 일은 가져오지 않습니다)`);
   }
   function saveNow() { return Store.saveDay(state.day).then(updateSaveStatus).catch((e) => { console.error("저장 실패:", e); toast("저장 실패 — 변경이 반영되지 않았어요"); }); }
   function saveDebounced() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 400); }

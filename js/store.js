@@ -62,6 +62,19 @@
   function newFolder(name) {
     return { id: "f_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6), name: (name || "").trim() };
   }
+  // 직전 기록일의 '미완료' 할 일을 오늘로 가져올 목록 계산 (순수 함수 — I/O 없음, 앱·위젯 공용).
+  //  · 'date' 이전(=과거)의 '내용 있는 날' 중 가장 최근 하루만 본다 (사이에 빈 날이 있으면 건너뜀).
+  //  · 완료(done)한 일은 가져오지 않는다. 이월분은 새 id의 일반 할 일(Big3 해제·미완료)로 만든다.
+  function computeCarry(allDays, date) {
+    const prev = (allDays || [])
+      .filter((d) => d && d.date < date && d.tasks && d.tasks.length)
+      .sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+    if (!prev) return [];
+    return prev.tasks
+      .filter((t) => !t.done)
+      .map((t) => { const n = newTask(t.text); n.category = t.category || ""; n.tags = (t.tags || []).slice(); return n; });
+  }
+
   function newTask(text) {
     return {
       id: uid(),
@@ -121,6 +134,23 @@
     newStandaloneNote,
     newFolder,
     emptyDay,
+    computeCarry,
+
+    /* 오늘이 비어 있으면 직전 기록일의 '미완료' 할 일을 이월해 저장한다 (앱·위젯 공용).
+       어느 창(앱/위젯)이 먼저 켜지든 같은 규칙으로 동작. 반환 {day, carried}. */
+    async carryOverIfEmpty(date) {
+      const day = await this.getDay(date);
+      if (date !== todayStr() || day.tasks.length) return { day, carried: 0 };
+      const all = await this.getAllDays();
+      const carry = computeCarry(all, date);
+      if (!carry.length) return { day, carried: 0 };
+      // 저장 직전 재확인 — 그 사이 다른 창이 이미 채웠으면 덮어쓰지 않는다(중복 이월 방지).
+      const fresh = await this.getDay(date);
+      if (fresh.tasks.length) return { day: fresh, carried: 0 };
+      fresh.tasks = carry;
+      await this.saveDay(fresh);
+      return { day: fresh, carried: carry.length };
+    },
 
     async init() {
       _db = await open();
@@ -378,4 +408,4 @@
   }
 
   global.Store = Store;
-})(window);
+})(typeof window !== "undefined" ? window : globalThis);

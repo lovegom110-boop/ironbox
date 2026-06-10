@@ -31,6 +31,7 @@
   let unsub = null;       // onSnapshot 해제 함수
   let wDragId = null;     // 순서변경 드래그 중인 할 일 id
   let editingId = null;   // 인라인 더블클릭 수정 중인 할 일 id
+  let carryTriedFor = null; // 이월을 이미 시도한 날짜(스냅샷 반복에도 한 번만 시도)
 
   /* ---------- 유틸 (app.js parseTags 와 동일 규칙) ---------- */
   function parseTags(raw) {
@@ -80,9 +81,20 @@
     if (unsub) { unsub(); unsub = null; }
     const d = viewDate;
     unsub = dayRef(d).onSnapshot(
-      (snap) => { currentDay = normalizeDay(d, snap.exists ? snap.data() : null); render(); },
+      (snap) => { currentDay = normalizeDay(d, snap.exists ? snap.data() : null); render(); maybeCarryOver(d); },
       (err) => { console.warn("구독 실패:", err); toast("불러오기 실패"); }
     );
+  }
+  // 오늘을 보고 있는데 비어 있으면, 직전 기록일의 미완료 할 일을 이월(앱과 동일 규칙, store.js 공용).
+  //  앱을 안 열어도 위젯만으로 자정 넘김 후 전일 미완료가 채워진다. 저장하면 onSnapshot이 갱신→자동 렌더.
+  function maybeCarryOver(d) {
+    if (d !== today) return;                 // 오늘이 아닐 땐 이월 안 함
+    if (carryTriedFor === d) return;         // 같은 날짜엔 한 번만 시도
+    if (!currentDay || currentDay.tasks.length) return;  // 이미 할 일이 있으면 패스
+    carryTriedFor = d;
+    Store.carryOverIfEmpty(d)
+      .then((r) => { if (r.carried) toast(`어제 미완료 ${r.carried}개를 오늘로 이월했어요`); })
+      .catch((e) => { console.warn("이월 실패:", e); carryTriedFor = null; });  // 실패 시 다음 기회에 재시도 허용
   }
   function goToDate(date) { viewDate = date; subscribe(); }
   // 자정 넘김 / 창 다시 포커스 시 오늘 재확인 (오늘을 보고 있었으면 따라서 갱신)
