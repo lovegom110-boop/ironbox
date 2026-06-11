@@ -26,8 +26,8 @@
   }
   async function loadDay(date) {
     state.date = date;
-    // 오늘 + 빈 날짜면 직전 기록일의 '미완료' 할 일을 이월 (공용 규칙 — 위젯과 동일, store.js)
-    const { day, carried } = await Store.carryOverIfEmpty(date);
+    // 오늘을 처음 열면 직전 기록일의 '미완료' 할 일을 하루 한 번 합침 (공용 규칙 — 위젯과 동일, store.js)
+    const { day, carried } = await Store.carryOverOnce(date);
     state.day = day;
     state.selectedId = null;
     state.openNoteId = null;

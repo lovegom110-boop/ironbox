@@ -49,7 +49,7 @@
     return `${y}-${m}-${day}`;
   }
   function emptyDay(date) {
-    return { date: date, wakeNote: "", tasks: [], notes: [], feedback: "", tomorrowPlan: "", updatedAt: 0 };
+    return { date: date, wakeNote: "", tasks: [], notes: [], feedback: "", tomorrowPlan: "", updatedAt: 0, carriedDone: false };
   }
   function newNote(title) {
     return { id: uid(), title: (title || "").trim(), body: "", updatedAt: 0 };
@@ -73,6 +73,18 @@
     return prev.tasks
       .filter((t) => !t.done)
       .map((t) => { const n = newTask(t.text); n.category = t.category || ""; n.tags = (t.tags || []).slice(); return n; });
+  }
+
+  // 오늘(day)에 '직전 기록일의 미완료'를 한 번 합친 결과를 계산 (순수 함수 — I/O 없음, 앱·위젯 공용).
+  //  · 이미 이월한 날(carriedDone)은 그대로 둔다 → 합친 걸 지우거나 완료해도 되살아나지 않는다.
+  //  · 오늘에 같은 이름(text)이 이미 있으면 그 항목은 다시 붙이지 않는다(중복 방지).
+  //  · 가져올 게 없어도 mark=true 로 '오늘 이월 끝' 표시를 켜, 그날은 더 시도하지 않는다(하루 한 번).
+  function planCarryMerge(day, allDays, date) {
+    const tasks = (day && day.tasks) || [];
+    if (day && day.carriedDone) return { tasks: tasks.slice(), added: 0, mark: false };
+    const existing = new Set(tasks.map((t) => (t.text || "").trim()));
+    const toAdd = computeCarry(allDays, date).filter((t) => !existing.has((t.text || "").trim()));
+    return { tasks: tasks.concat(toAdd), added: toAdd.length, mark: true };
   }
 
   function newTask(text) {
@@ -135,21 +147,25 @@
     newFolder,
     emptyDay,
     computeCarry,
+    planCarryMerge,
 
-    /* 오늘이 비어 있으면 직전 기록일의 '미완료' 할 일을 이월해 저장한다 (앱·위젯 공용).
+    /* 오늘을 처음 열 때 직전 기록일의 '미완료' 할 일을 '한 번' 합쳐 저장한다 (앱·위젯 공용).
+       오늘에 이미 할 일이 있어도 그 아래에 합친다. 합치면 carriedDone 표시를 켜 그날은 다시 안 한다
+       → 합친 걸 지우거나 완료해도 되살아나지 않고, 여러 번 열어도 중복이 쌓이지 않는다.
        어느 창(앱/위젯)이 먼저 켜지든 같은 규칙으로 동작. 반환 {day, carried}. */
-    async carryOverIfEmpty(date) {
+    async carryOverOnce(date) {
       const day = await this.getDay(date);
-      if (date !== todayStr() || day.tasks.length) return { day, carried: 0 };
+      if (date !== todayStr() || day.carriedDone) return { day, carried: 0 };
       const all = await this.getAllDays();
-      const carry = computeCarry(all, date);
-      if (!carry.length) return { day, carried: 0 };
-      // 저장 직전 재확인 — 그 사이 다른 창이 이미 채웠으면 덮어쓰지 않는다(중복 이월 방지).
+      // 저장 직전 재확인 — 그 사이 다른 창이 이미 합쳤으면(carriedDone) 건드리지 않는다(중복 이월 방지).
       const fresh = await this.getDay(date);
-      if (fresh.tasks.length) return { day: fresh, carried: 0 };
-      fresh.tasks = carry;
+      if (fresh.carriedDone) return { day: fresh, carried: 0 };
+      const plan = planCarryMerge(fresh, all, date);
+      if (!plan.mark) return { day: fresh, carried: 0 };
+      fresh.tasks = plan.tasks;
+      fresh.carriedDone = true;
       await this.saveDay(fresh);
-      return { day: fresh, carried: carry.length };
+      return { day: fresh, carried: plan.added };
     },
 
     async init() {

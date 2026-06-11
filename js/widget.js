@@ -85,15 +85,16 @@
       (err) => { console.warn("구독 실패:", err); toast("불러오기 실패"); }
     );
   }
-  // 오늘을 보고 있는데 비어 있으면, 직전 기록일의 미완료 할 일을 이월(앱과 동일 규칙, store.js 공용).
+  // 오늘을 보고 있으면, 직전 기록일의 미완료 할 일을 하루 한 번 합침(앱과 동일 규칙, store.js 공용).
+  //  오늘에 이미 할 일이 있어도 그 아래에 합친다(중복·되살아남은 store.carryOverOnce 가 막음).
   //  앱을 안 열어도 위젯만으로 자정 넘김 후 전일 미완료가 채워진다. 저장하면 onSnapshot이 갱신→자동 렌더.
   function maybeCarryOver(d) {
-    if (d !== today) return;                 // 오늘이 아닐 땐 이월 안 함
-    if (carryTriedFor === d) return;         // 같은 날짜엔 한 번만 시도
-    if (!currentDay || currentDay.tasks.length) return;  // 이미 할 일이 있으면 패스
+    if (d !== today) return;                 // 오늘이 아닐 땐 합치지 않음
+    if (carryTriedFor === d) return;         // 같은 날짜엔 한 번만 시도(세션 내)
+    if (!currentDay) return;                 // 아직 스냅샷 전이면 다음 스냅샷에서
     carryTriedFor = d;
-    Store.carryOverIfEmpty(d)
-      .then((r) => { if (r.carried) toast(`어제 미완료 ${r.carried}개를 오늘로 이월했어요`); })
+    Store.carryOverOnce(d)
+      .then((r) => { if (r.carried) toast(`어제 미완료 ${r.carried}개를 오늘로 합쳤어요`); })
       .catch((e) => { console.warn("이월 실패:", e); carryTriedFor = null; });  // 실패 시 다음 기회에 재시도 허용
   }
   function goToDate(date) { viewDate = date; subscribe(); }

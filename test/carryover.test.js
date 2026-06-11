@@ -58,4 +58,52 @@ assert.deepStrictEqual(Store.computeCarry([], "2026-06-09"), [], "과거 기록 
   assert.deepStrictEqual(Store.computeCarry(all, "2026-06-09"), [], "오늘/미래 제외");
 }
 
-console.log("ALL PASS (7 cases)");
+/* ----- planCarryMerge: '하루 한 번' 합치기 순수 로직 ----- */
+assert.ok(typeof Store.planCarryMerge === "function", "Store.planCarryMerge 가 있어야 함");
+
+// 8) 오늘에 이미 할 일이 있어도 어제 미완료를 '아래에 합침' (비었을 때만 X)
+{
+  const day = { date: "2026-06-09", tasks: [task("today-own", false)], carriedDone: false };
+  const all = [{ date: "2026-06-08", tasks: [task("A", false), task("B", true)] }, day];
+  const plan = Store.planCarryMerge(day, all, "2026-06-09");
+  assert.deepStrictEqual(texts(plan.tasks), ["today-own", "A"], "오늘 것 아래에 어제 미완료 A 합침");
+  assert.strictEqual(plan.added, 1, "1개 추가");
+  assert.strictEqual(plan.mark, true, "이월 표시 켬");
+}
+// 9) 같은 이름이 오늘에 이미 있으면 그건 안 붙임(중복 방지)
+{
+  const day = { date: "2026-06-09", tasks: [task("A", false)] };
+  const all = [{ date: "2026-06-08", tasks: [task("A", false), task("B", false)] }, day];
+  const plan = Store.planCarryMerge(day, all, "2026-06-09");
+  assert.deepStrictEqual(texts(plan.tasks), ["A", "B"], "이름 겹치는 A는 제외, B만 추가");
+  assert.strictEqual(plan.added, 1, "B 1개만");
+}
+// 10) 이미 이월한 날(carriedDone)은 그대로 두고 안 붙임 → 지운 것 안 살아남
+{
+  const day = { date: "2026-06-09", tasks: [task("A", false)], carriedDone: true };
+  const all = [{ date: "2026-06-08", tasks: [task("B", false)] }, day];
+  const plan = Store.planCarryMerge(day, all, "2026-06-09");
+  assert.deepStrictEqual(texts(plan.tasks), ["A"], "건드리지 않음");
+  assert.strictEqual(plan.added, 0, "추가 없음");
+  assert.strictEqual(plan.mark, false, "다시 저장 안 함");
+}
+// 11) 빈 오늘 + 어제 미완료 → 어제 것만 채움, 표시 켬
+{
+  const day = { date: "2026-06-09", tasks: [] };
+  const all = [{ date: "2026-06-08", tasks: [task("A", false), task("C", true)] }, day];
+  const plan = Store.planCarryMerge(day, all, "2026-06-09");
+  assert.deepStrictEqual(texts(plan.tasks), ["A"], "미완료 A만");
+  assert.strictEqual(plan.added, 1, "1개");
+  assert.strictEqual(plan.mark, true, "표시 켬");
+}
+// 12) 어제가 전부 완료라 가져올 게 없어도, '하루 한 번' 표시는 켠다(0개 추가)
+{
+  const day = { date: "2026-06-09", tasks: [task("own", false)] };
+  const all = [{ date: "2026-06-08", tasks: [task("A", true)] }, day];
+  const plan = Store.planCarryMerge(day, all, "2026-06-09");
+  assert.deepStrictEqual(texts(plan.tasks), ["own"], "그대로");
+  assert.strictEqual(plan.added, 0, "추가 0");
+  assert.strictEqual(plan.mark, true, "그래도 표시는 켜서 그날 재시도 멈춤");
+}
+
+console.log("ALL PASS (12 cases)");
