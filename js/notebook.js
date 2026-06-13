@@ -302,8 +302,12 @@
   // 선택 노트가 바뀐 경우에만 편집기 재생성 (탭/검색/태그 클릭 때 깜빡임 방지)
   function syncEditor() {
     if (S.noteId === mountedNoteId) return;
-    mountedNoteId = S.noteId;
+    // 순서 주의: renderEditor()가 먼저 destroyEditor()로 '직전 노트'(mountedNoteId)에
+    // 편집 내용을 flush·저장한 뒤 새 노트를 마운트한다. mountedNoteId를 미리 새 노트로
+    // 바꾸면 destroyEditor가 직전 편집 내용을 '방금 클릭한 노트'에 잘못 저장해,
+    // 노트끼리 본문이 덮어써진다(=노트 여러 개가 한 내용으로 합쳐지던 버그).
     renderEditor();
+    mountedNoteId = S.noteId;
   }
   function openNote(id) {
     S.noteId = id;
