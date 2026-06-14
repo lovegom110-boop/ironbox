@@ -409,10 +409,19 @@
       host.addEventListener("paste", markEditorChangedByUser, true);
       host.addEventListener("drop", markEditorChangedByUser, true);
       host.addEventListener("keydown", (e) => {
-        if (!(e.ctrlKey && e.shiftKey) || !/^Digit[0-6]$/.test(e.code)) return;
-        e.preventDefault();
-        e.stopPropagation();
-        applyHeading(Number(e.code.slice(-1)));
+        if (!(e.ctrlKey && e.shiftKey)) return;
+        if (/^Digit[0-6]$/.test(e.code)) {            // 1~6=H1~H6, 0=일반 문단
+          e.preventDefault(); e.stopPropagation();
+          applyHeading(Number(e.code.slice(-1)));
+        } else if (e.code === "Digit8") {             // 글머리 기호 목록 (구글 문서 관례)
+          e.preventDefault(); e.stopPropagation();
+          editorHasUserChanges = true;
+          S.editor.exec("bulletList");
+        } else if (e.code === "Digit7") {             // 번호 목록 (구글 문서 관례)
+          e.preventDefault(); e.stopPropagation();
+          editorHasUserChanges = true;
+          S.editor.exec("orderedList");
+        }
       }, true);
       host.addEventListener("click", (e) => {
         if (e.target.closest("button")) markEditorChangedByUser();

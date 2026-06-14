@@ -79,6 +79,8 @@ assert.ok(!serviceWorker.includes("notebook-format"), "SW 셸에서 notebook-for
 assert.ok(notebook.includes('/^Digit[0-6]$/'), "heading shortcut must use physical digit keys");
 assert.ok(notebook.includes("e.ctrlKey && e.shiftKey"), "heading shortcut must require Ctrl and Shift");
 assert.ok(notebook.includes('S.editor.exec("heading"'), "WYSIWYG heading shortcut must use the editor heading command");
+assert.ok(notebook.includes('S.editor.exec("bulletList")'), "Ctrl+Shift+8 글머리 목록 단축키가 있어야 함");
+assert.ok(notebook.includes('S.editor.exec("orderedList")'), "Ctrl+Shift+7 번호 목록 단축키가 있어야 함");
 
 // 편집기 우측 하단: 마크다운 보기(모달+복사) + .md 다운로드
 assert.ok(notebook.includes("nb-editor-actions"), "우측 하단 액션 버튼 그룹이 있어야 함");

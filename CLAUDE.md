@@ -26,6 +26,9 @@ js/lib/{easymde, marked, purify}  — 노트 마크다운(self-host)
 
 ## 2026-06-14
 
+### Added (노트 목록 단축키 — 글머리/번호)
+- **리스트 단축키** — 노트 편집기(WYSIWYG)에서 `Ctrl+Shift+8`=글머리 기호 목록(`bulletList`), `Ctrl+Shift+7`=번호 목록(`orderedList`). 구글 문서 관례 + 기존 헤딩 단축키(`Ctrl+Shift+1~6`)와 같은 숫자 family로 충돌 없이 확장. 다시 누르면 토글 해제, 편집기 포커스 중에만 동작. 헤딩 단축키 keydown 핸들러에 분기 추가. SW `v42 → v43`. (`js/notebook.js`, `sw.js`, `test/notebook-deploy.test.js`)
+
 ### Added (노트 편집기 우측 하단 — 마크다운 보기 · 다운로드)
 - **마크다운 보기** — 편집기 우측 하단 떠있는 버튼으로 현재 노트의 **원문 마크다운을 읽기 전용 모달**(앱 공통 `.modal` 재사용)로 표시 + **복사** 버튼(클립보드, execCommand 폴백). 마크다운 *편집* 모드를 되살리는 게 아니라 보기·복사 전용(문서 전용 방향 유지).
 - **다운로드** — 현재 노트를 **`제목.md`** 파일로 내려받기(저장 형식이 마크다운이라 그대로, `text/markdown` blob — app.js `.txt` 내보내기와 동일 패턴). 제목 없으면 `untitled.md`, 파일명 금지문자는 `_` 치환·80자 제한. 내용은 편집기 현재값(`getMarkdown()`)이라 저장 전 변경분까지 포함. 신규 `nb-editor-actions`(`right/bottom` 떠있는 pill) + `openMarkdownView`/`downloadNote`/`safeFileName`/`currentMarkdown`. SW `v41 → v42`. (`js/notebook.js`, `css/style.css`, `sw.js`, `test/notebook-deploy.test.js`)
