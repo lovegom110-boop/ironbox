@@ -5,6 +5,8 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const notebook = fs.readFileSync(path.join(root, "js", "notebook.js"), "utf8");
+const index = fs.readFileSync(path.join(root, "index.html"), "utf8");
+const serviceWorker = fs.readFileSync(path.join(root, "sw.js"), "utf8");
 const firebase = JSON.parse(fs.readFileSync(path.join(root, "firebase.json"), "utf8"));
 
 // 노트 전환 시 기존 편집기를 먼저 flush한 뒤 새 노트 ID를 마운트해야 한다.
@@ -65,5 +67,10 @@ assert.ok(
   notebook.includes('host.addEventListener("beforeinput", markEditorChangedByUser, true)'),
   "real user body input must be detected"
 );
+assert.ok(notebook.includes("buildEditorTools"), "editor mode and line prefix controls must exist");
+assert.ok(notebook.includes('changeEditorMode("markdown")'), "custom prefixes must switch to markdown mode");
+assert.ok(notebook.includes("NotebookFormat.toggleLinePrefix"), "line prefix controls must support toggle removal");
+assert.ok(index.includes('src="js/notebook-format.js"'), "line prefix formatter must load before notebook");
+assert.ok(serviceWorker.includes('"./js/notebook-format.js"'), "line prefix formatter must be available offline");
 
 console.log("ALL PASS (notebook transition + hosting excludes)");

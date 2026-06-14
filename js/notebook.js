@@ -40,6 +40,59 @@
     return Array.from(new Set(String(raw || "")
       .split(/[\s,]+/).map((t) => t.replace(/^#+/, "").trim()).filter(Boolean)));
   }
+  function updateModeButtons(mode) {
+    const tools = root().querySelector(".nb-editor-tools");
+    if (!tools) return;
+    tools.querySelectorAll("[data-editor-mode]").forEach((button) => {
+      button.classList.toggle("active", button.dataset.editorMode === mode);
+    });
+  }
+  function changeEditorMode(mode) {
+    if (!S.editor) return;
+    editorHasUserChanges = false;
+    S.editor.changeMode(mode, true);
+    updateModeButtons(mode);
+    setTimeout(() => {
+      if (!S.editor) return;
+      mountedEditorBody = S.editor.getMarkdown();
+      editorHasUserChanges = false;
+    }, 0);
+  }
+  function applyLinePrefix(type, n) {
+    if (!S.editor || !global.NotebookFormat) return;
+    changeEditorMode("markdown");
+    setTimeout(() => {
+      if (!S.editor || n.id !== S.noteId) return;
+      const result = global.NotebookFormat.toggleLinePrefix(S.editor.getMarkdown(), S.editor.getSelection(), type);
+      editorHasUserChanges = true;
+      mountedEditorBody = result.markdown;
+      n.body = result.markdown;
+      S.editor.setMarkdown(result.markdown, false);
+      S.editor.setSelection(result.selection[0], result.selection[1]);
+      saveNoteDebounced();
+    }, 0);
+  }
+  function buildEditorTools(n) {
+    const tools = el("div", "nb-editor-tools");
+    const modes = el("div", "nb-tool-group");
+    [["wysiwyg", "문서"], ["markdown", "마크다운"]].forEach(([mode, label]) => {
+      const button = el("button", "nb-tool-btn" + (mode === "wysiwyg" ? " active" : ""), label);
+      button.type = "button";
+      button.dataset.editorMode = mode;
+      button.onclick = () => changeEditorMode(mode);
+      modes.appendChild(button);
+    });
+    const prefixes = el("div", "nb-tool-group");
+    [["bullet", "•"], ["decimal", "1."], ["paren", "1)"], ["korean", "가."], ["circle", "①"]].forEach(([type, label]) => {
+      const button = el("button", "nb-tool-btn nb-prefix-btn", label);
+      button.type = "button";
+      button.title = label + " 글머리 적용 · 다시 누르면 해제";
+      button.onclick = () => applyLinePrefix(type, n);
+      prefixes.appendChild(button);
+    });
+    tools.append(modes, prefixes);
+    return tools;
+  }
 
   const S = {
     notes: [], folders: [], folderId: ALL, noteId: null,
@@ -322,12 +375,14 @@
     pane.appendChild(metaRow);
 
     const host = el("div", "nb-editor-tui");
+    pane.appendChild(buildEditorTools(n));
     pane.appendChild(host);
     try {
       S.editor = new global.toastui.Editor({
         el: host,
         height: "100%",
         initialEditType: "wysiwyg",
+        hideModeSwitch: true,
         previewStyle: "vertical",
         initialValue: n.body || "",
         usageStatistics: false,
