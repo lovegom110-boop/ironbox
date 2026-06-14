@@ -72,6 +72,20 @@
       saveNoteDebounced();
     }, 0);
   }
+  function applyHeading(level, n) {
+    if (!S.editor || !global.NotebookFormat) return;
+    changeEditorMode("markdown");
+    setTimeout(() => {
+      if (!S.editor || n.id !== S.noteId) return;
+      const result = global.NotebookFormat.toggleHeading(S.editor.getMarkdown(), S.editor.getSelection(), level);
+      editorHasUserChanges = true;
+      mountedEditorBody = result.markdown;
+      n.body = result.markdown;
+      S.editor.setMarkdown(result.markdown, false);
+      S.editor.setSelection(result.selection[0], result.selection[1]);
+      saveNoteDebounced();
+    }, 0);
+  }
   function buildEditorTools(n) {
     const tools = el("div", "nb-editor-tools");
     const modes = el("div", "nb-tool-group");
@@ -79,6 +93,7 @@
       const button = el("button", "nb-tool-btn" + (mode === "wysiwyg" ? " active" : ""), label);
       button.type = "button";
       button.dataset.editorMode = mode;
+      button.addEventListener("mousedown", (e) => e.preventDefault());
       button.onclick = () => changeEditorMode(mode);
       modes.appendChild(button);
     });
@@ -87,10 +102,12 @@
       const button = el("button", "nb-tool-btn nb-prefix-btn", label);
       button.type = "button";
       button.title = label + " 글머리 적용 · 다시 누르면 해제";
+      button.addEventListener("mousedown", (e) => e.preventDefault());
       button.onclick = () => applyLinePrefix(type, n);
       prefixes.appendChild(button);
     });
-    tools.append(modes, prefixes);
+    const shortcutHelp = el("span", "nb-shortcut-help", "Ctrl+Shift+1~6: H1~H6 · 다시 누르면 해제 · Ctrl+Shift+0: 일반 문단");
+    tools.append(modes, prefixes, shortcutHelp);
     return tools;
   }
 
@@ -401,6 +418,12 @@
       host.addEventListener("beforeinput", markEditorChangedByUser, true);
       host.addEventListener("paste", markEditorChangedByUser, true);
       host.addEventListener("drop", markEditorChangedByUser, true);
+      host.addEventListener("keydown", (e) => {
+        if (!(e.ctrlKey && e.shiftKey) || !/^Digit[0-6]$/.test(e.code)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        applyHeading(Number(e.code.slice(-1)), n);
+      }, true);
       host.addEventListener("click", (e) => {
         if (e.target.closest("button")) markEditorChangedByUser();
       }, true);

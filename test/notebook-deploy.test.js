@@ -72,5 +72,13 @@ assert.ok(notebook.includes('changeEditorMode("markdown")'), "custom prefixes mu
 assert.ok(notebook.includes("NotebookFormat.toggleLinePrefix"), "line prefix controls must support toggle removal");
 assert.ok(index.includes('src="js/notebook-format.js"'), "line prefix formatter must load before notebook");
 assert.ok(serviceWorker.includes('"./js/notebook-format.js"'), "line prefix formatter must be available offline");
+assert.ok(notebook.includes('/^Digit[0-6]$/'), "heading shortcut must use physical digit keys");
+assert.ok(notebook.includes("e.ctrlKey && e.shiftKey"), "heading shortcut must require Ctrl and Shift");
+assert.ok(notebook.includes("NotebookFormat.toggleHeading"), "heading shortcut must support apply and toggle removal");
+assert.ok(notebook.includes("Ctrl+Shift+1~6"), "heading shortcut help must be visible in the editor");
+assert.ok(
+  notebook.includes('button.addEventListener("mousedown", (e) => e.preventDefault())'),
+  "format buttons must preserve the editor selection before applying"
+);
 
 console.log("ALL PASS (notebook transition + hosting excludes)");

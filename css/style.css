@@ -403,6 +403,7 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
 .nb-tool-btn:hover{background:var(--bg-2); color:var(--ink)}
 .nb-tool-btn.active{background:var(--blue-soft); color:var(--blue)}
 .nb-prefix-btn{font-size:13px}
+.nb-shortcut-help{margin-left:auto; color:var(--ink-3); font-size:11px; line-height:1.4; text-align:right}
 .nb-editor-empty{margin:auto; text-align:center; color:var(--ink-3); display:flex; flex-direction:column; align-items:center; gap:12px; padding:40px 20px}
 .nb-editor-empty-icon{font-size:42px}
 .nb-editor-empty .btn-primary{height:42px}
@@ -419,6 +420,7 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
   .notes-view.nb-editing .nb-editor{display:flex}
   .nb-editor-back{display:inline-flex}
   .nb-title-input{font-size:21px}
+  .nb-shortcut-help{width:100%; margin-left:0; text-align:left}
 }
 
 /* 로그인 게이트 */
