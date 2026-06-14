@@ -267,6 +267,49 @@
       global.Store.saveNote(n).then(renderList).catch(() => {});
     }
   }
+
+  /* ---------------- 마크다운 보기 / 다운로드 ---------------- */
+  function currentMarkdown(n) {
+    try { if (S.editor) return S.editor.getMarkdown(); } catch (_) {}
+    return (n && n.body) || "";
+  }
+  function safeFileName(title) {
+    const base = String(title || "").trim().replace(/[\\/:*?"<>|]+/g, "_").replace(/\s+/g, " ").slice(0, 80);
+    return (base || "untitled") + ".md";
+  }
+  // 현재 노트를 .md 파일로 내려받기 (app.js의 .txt 내보내기와 동일 blob 패턴)
+  function downloadNote(n) {
+    const blob = new Blob([currentMarkdown(n)], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = safeFileName(n.title);
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  // 원문 마크다운 보기(읽기 전용) + 복사 — 앱 공통 .modal 재사용
+  function openMarkdownView(n) {
+    const md = currentMarkdown(n);
+    const overlay = el("div", "modal");
+    const card = el("div", "modal-card nb-md-card");
+    const copy = el("button", "row-btn"); copy.type = "button"; copy.textContent = "복사";
+    const close = el("button", "close-btn"); close.type = "button"; close.textContent = "✕";
+    const head = el("div", "modal-head");
+    head.append(el("span", "modal-title", "마크다운"), copy, close);
+    const ta = el("textarea", "nb-md-text"); ta.value = md; ta.readOnly = true;
+    card.append(head, ta);
+    overlay.appendChild(card);
+    const closeIt = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
+    close.onclick = closeIt;
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) closeIt(); });
+    copy.onclick = () => {
+      const done = () => { copy.textContent = "복사됨"; setTimeout(() => { copy.textContent = "복사"; }, 1200); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(md).then(done).catch(() => { ta.select(); done(); });
+      } else { ta.select(); try { document.execCommand("copy"); } catch (_) {} done(); }
+    };
+    document.body.appendChild(overlay);
+  }
+
   function renderEditor() {
     const pane = root().querySelector(".nb-editor");
     destroyEditor();
@@ -328,6 +371,20 @@
 
     const host = el("div", "nb-editor-tui");
     pane.appendChild(host);
+
+    // 우측 하단 떠있는 액션: 마크다운 보기 · 다운로드
+    const actions = el("div", "nb-editor-actions");
+    const viewBtn = el("button", "nb-action-btn", "마크다운 보기");
+    viewBtn.type = "button"; viewBtn.title = "원문 마크다운 보기 · 복사";
+    viewBtn.addEventListener("mousedown", (e) => e.preventDefault());
+    viewBtn.onclick = () => openMarkdownView(n);
+    const dlBtn = el("button", "nb-action-btn", "다운로드");
+    dlBtn.type = "button"; dlBtn.title = "이 노트를 .md 파일로 내려받기";
+    dlBtn.addEventListener("mousedown", (e) => e.preventDefault());
+    dlBtn.onclick = () => downloadNote(n);
+    actions.append(viewBtn, dlBtn);
+    pane.appendChild(actions);
+
     try {
       S.editor = new global.toastui.Editor({
         el: host,

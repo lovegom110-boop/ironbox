@@ -80,4 +80,10 @@ assert.ok(notebook.includes('/^Digit[0-6]$/'), "heading shortcut must use physic
 assert.ok(notebook.includes("e.ctrlKey && e.shiftKey"), "heading shortcut must require Ctrl and Shift");
 assert.ok(notebook.includes('S.editor.exec("heading"'), "WYSIWYG heading shortcut must use the editor heading command");
 
+// 편집기 우측 하단: 마크다운 보기(모달+복사) + .md 다운로드
+assert.ok(notebook.includes("nb-editor-actions"), "우측 하단 액션 버튼 그룹이 있어야 함");
+assert.ok(notebook.includes("마크다운 보기"), "마크다운 보기 버튼이 있어야 함");
+assert.ok(notebook.includes("text/markdown"), "노트를 .md(text/markdown)로 다운로드해야 함");
+assert.ok(notebook.includes("safeFileName"), "다운로드 파일명을 제목 기반으로 안전화해야 함");
+
 console.log("ALL PASS (notebook transition + hosting excludes)");
