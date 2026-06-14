@@ -26,6 +26,13 @@ js/lib/{easymde, marked, purify}  — 노트 마크다운(self-host)
 
 ## 2026-06-14
 
+### Design (노트장 디자인 폴리시 — 4건)
+- **[버그] 서식 툴바 hover 무반응** — `.nb-tool-btn:hover`가 미정의 변수 `--bg-2`를 참조해 강조가 안 뜨던 문제 → `--bg-soft`로 교체. (`css/style.css`)
+- **Toast UI 에디터 테마 정합(폰트+삼성블루)** — 임베드된 Toast UI Editor가 자체 기본 스킨(Open Sans·청록 액센트 `#4b96e6`/`#00a9ff`·분홍 코드)을 그대로 노출해 "다른 앱" 느낌이던 것을 디자인 토큰으로 오버라이드. 본문/제목 폰트 **Pretendard**(inherit), 링크·코드·팝업 확인버튼·활성탭 액센트 **삼성블루 `#1428A0`**, 코드/코드블록 배경 `--bg-soft`, 헤딩 보더·인용 색 톤다운. 모두 `.nb-editor-tui` 스코프(앱 영향 격리). 셀렉터는 self-host CSS에서 실제 확인 후 작성. (`css/style.css`)
+- **이중 툴바 정리** — 커스텀 서식 줄(`.nb-editor-tools`)을 아래 에디터와 한 묶음처럼 시각 통합(같은 배경·보더·radius, gap 상쇄), 긴 단축키 안내문 → `?` 도움말 버튼(툴팁)으로 접음, **문서(WYSIWYG) 모드에선 마크다운 전용 글머리 버튼을 흐리게(`nb-tool-dim`)+안내 툴팁**으로 "안 먹는다" 오해 제거(클릭 시 마크다운 전환 동작은 유지). 대화면 **본문 가독 폭 max-width 880px 중앙정렬**. (`js/notebook.js`, `css/style.css`)
+- **이모지 톤다운 + 디자인 문서 동기화** — DESIGN.md "이모지 최소화" 원칙에 맞춰 노트장에서 즐겨찾기 `⭐/★`만 유지, 나머지 제거(탭 `🗂 전체`→`전체`·`📭 미분류`→`미분류`, 폴더 select `📁`/`📭` 제거, 검색 placeholder `🔍` 제거, 빈 상태 `📝` 아이콘 제거). `DESIGN.md` 색 토큰을 코드 기준으로 정정(`--ink #000000→#0a0a0a`, `--ink-3 #767676→#8a8a8a`, `--line-soft #ebebeb→#ececec`). (`js/notebook.js`, `DESIGN.md`)
+- 서비스워커 캐시 `v39 → v40` (위 CSS/JS 반영).
+
 ### Changed
 - **노트장 생성일·수정일 표시** — 왼쪽 목록에는 `수정 n분 전`, 오른쪽 편집 화면에는 `생성 YYYY.MM.DD HH:mm · 수정 YYYY.MM.DD HH:mm`을 표시하고 저장 직후 수정 시각도 갱신. (`js/notebook.js`, `css/style.css`)
 

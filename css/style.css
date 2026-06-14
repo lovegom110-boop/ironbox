@@ -397,18 +397,46 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
 .nb-folder-select:focus{border-color:var(--blue)}
 .nb-tags-input{flex:1; min-width:160px; border:1px solid var(--line); border-radius:999px; padding:6px 14px; font-size:13px; outline:none; background:var(--bg)}
 .nb-tags-input:focus{border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-soft)}
-.nb-editor-tools{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+/* 편집 칼럼 — 대화면 가독 폭 제한(중앙 정렬) */
+.nb-editor > *{max-width:880px; width:100%; margin-left:auto; margin-right:auto}
+/* 서식 툴바 — 아래 에디터와 한 묶음처럼 보이도록 시각 통합 */
+.nb-editor-tools{display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--bg-soft); border:1px solid var(--line-soft); border-bottom:none; border-radius:var(--radius-sm) var(--radius-sm) 0 0; padding:8px 10px; margin-bottom:-10px; position:relative; z-index:1}
 .nb-tool-group{display:inline-flex; align-items:center; gap:2px; padding:2px; border:1px solid var(--line-soft); border-radius:9px; background:var(--bg)}
 .nb-tool-btn{min-width:34px; height:28px; border:none; border-radius:7px; padding:0 9px; background:transparent; color:var(--ink-2); font-size:12px; font-weight:700}
-.nb-tool-btn:hover{background:var(--bg-2); color:var(--ink)}
+.nb-tool-btn:hover{background:var(--bg-soft); color:var(--ink)}
 .nb-tool-btn.active{background:var(--blue-soft); color:var(--blue)}
 .nb-prefix-btn{font-size:13px}
-.nb-shortcut-help{margin-left:auto; color:var(--ink-3); font-size:11px; line-height:1.4; text-align:right}
+.nb-tool-dim{opacity:.4}                 /* 문서(WYSIWYG) 모드에서 마크다운 전용 글머리 버튼 흐리게 */
+.nb-help-btn{margin-left:auto; min-width:28px; border-radius:999px; color:var(--ink-3)}
+.nb-help-btn:hover{background:var(--bg-soft); color:var(--blue)}
 .nb-editor-empty{margin:auto; text-align:center; color:var(--ink-3); display:flex; flex-direction:column; align-items:center; gap:12px; padding:40px 20px}
-.nb-editor-empty-icon{font-size:42px}
 .nb-editor-empty .btn-primary{height:42px}
-.nb-editor-tui{flex:1; min-height:0; border:1px solid var(--line-soft); border-radius:12px; overflow:hidden}
+.nb-editor-tui{flex:1; min-height:0; border:1px solid var(--line-soft); border-radius:0 0 var(--radius-sm) var(--radius-sm); overflow:hidden}
 .nb-editor-tui .toastui-editor-defaultUI{border:none; height:100%}
+
+/* Toast UI Editor — 디자인 토큰 정합 (폰트 Pretendard + 삼성블루 액센트) */
+.nb-editor-tui .toastui-editor-defaultUI{font-family:inherit}
+.nb-editor-tui .toastui-editor-contents{font-family:inherit; font-size:15px; line-height:1.7; color:var(--ink)}
+.nb-editor-tui .toastui-editor-contents p,
+.nb-editor-tui .toastui-editor-contents ul,
+.nb-editor-tui .toastui-editor-contents ol,
+.nb-editor-tui .toastui-editor-contents td,
+.nb-editor-tui .toastui-editor-contents th{font-family:inherit}
+.nb-editor-tui .toastui-editor-contents h1,
+.nb-editor-tui .toastui-editor-contents h2,
+.nb-editor-tui .toastui-editor-contents h3,
+.nb-editor-tui .toastui-editor-contents h4,
+.nb-editor-tui .toastui-editor-contents h5,
+.nb-editor-tui .toastui-editor-contents h6{font-family:inherit; font-weight:800; letter-spacing:-.02em; color:var(--ink)}
+.nb-editor-tui .toastui-editor-contents h1{border-bottom:1px solid var(--line); margin:26px 0 12px; padding-bottom:6px}
+.nb-editor-tui .toastui-editor-contents h2{border-bottom:1px solid var(--line-soft); margin:20px 0 10px; padding-bottom:6px}
+.nb-editor-tui .toastui-editor-contents a{color:var(--blue)}
+.nb-editor-tui .toastui-editor-contents code{background:var(--bg-soft); color:var(--blue)}
+.nb-editor-tui .toastui-editor-contents pre{background:var(--bg-soft)}
+.nb-editor-tui .toastui-editor-contents blockquote{border-left:3px solid var(--line); color:var(--ink-2)}
+.nb-editor-tui .toastui-editor-defaultUI-toolbar{background:var(--bg-soft); border-bottom:1px solid var(--line-soft)}
+.nb-editor-tui .toastui-editor-ok-button{background-color:var(--blue); border-color:var(--blue)}
+.nb-editor-tui .toastui-editor-tabs .tab-item.active{color:var(--blue); border-color:var(--blue)}
 
 /* 노트장 — 모바일 1열 (목록 ↔ 편집 전환) */
 @media (max-width:720px){
@@ -420,7 +448,6 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
   .notes-view.nb-editing .nb-editor{display:flex}
   .nb-editor-back{display:inline-flex}
   .nb-title-input{font-size:21px}
-  .nb-shortcut-help{width:100%; margin-left:0; text-align:left}
 }
 
 /* 로그인 게이트 */

@@ -46,6 +46,14 @@
     tools.querySelectorAll("[data-editor-mode]").forEach((button) => {
       button.classList.toggle("active", button.dataset.editorMode === mode);
     });
+    // 글머리 버튼은 마크다운 모드 전용 — 문서(WYSIWYG) 모드에선 흐리게 + 안내 툴팁
+    const mdOnly = mode !== "markdown";
+    tools.querySelectorAll(".nb-prefix-btn").forEach((button) => {
+      button.classList.toggle("nb-tool-dim", mdOnly);
+      button.title = mdOnly
+        ? "마크다운 모드 전용 · 누르면 마크다운 모드로 전환됩니다"
+        : (button.dataset.prefixTitle || "");
+    });
   }
   function changeEditorMode(mode) {
     if (!S.editor) return;
@@ -113,13 +121,17 @@
     [["bullet", "•"], ["decimal", "1."], ["paren", "1)"], ["korean", "가."], ["circle", "①"]].forEach(([type, label]) => {
       const button = el("button", "nb-tool-btn nb-prefix-btn", label);
       button.type = "button";
-      button.title = label + " 글머리 적용 · 다시 누르면 해제";
+      button.dataset.prefixTitle = label + " 글머리 적용 · 다시 누르면 해제";
+      button.title = button.dataset.prefixTitle;
       button.addEventListener("mousedown", (e) => e.preventDefault());
       button.onclick = () => applyLinePrefix(type, n);
       prefixes.appendChild(button);
     });
-    const shortcutHelp = el("span", "nb-shortcut-help", "Ctrl+Shift+1~6: H1~H6 · 다시 누르면 해제 · Ctrl+Shift+0: 일반 문단");
-    tools.append(modes, prefixes, shortcutHelp);
+    const help = el("button", "nb-tool-btn nb-help-btn", "?");
+    help.type = "button";
+    help.title = "단축키 — Ctrl+Shift+1~6: H1~H6 (다시 누르면 해제) · Ctrl+Shift+0: 일반 문단\n글머리(• 1. 1) 가. ①): 마크다운 모드에서 줄을 선택한 뒤 누르세요";
+    help.addEventListener("mousedown", (e) => e.preventDefault());
+    tools.append(modes, prefixes, help);
     return tools;
   }
 
@@ -215,10 +227,10 @@
   function renderTabs() {
     const box = root().querySelector(".nb-tabs");
     box.innerHTML = "";
-    box.appendChild(tab(ALL, "🗂 전체", false));
+    box.appendChild(tab(ALL, "전체", false));
     box.appendChild(tab(FAV, "⭐ 즐겨찾기", false));
     S.folders.forEach((f, idx) => box.appendChild(tab(f.id, f.name || "(이름 없음)", true, idx)));
-    box.appendChild(tab(UNFILED, "📭 미분류", false));
+    box.appendChild(tab(UNFILED, "미분류", false));
     const add = el("button", "nb-tab nb-tab-add", "+ 분류");
     add.type = "button"; add.onclick = addFolder;
     box.appendChild(add);
@@ -353,7 +365,6 @@
     if (!n) {
       const empty = el("div", "nb-editor-empty");
       empty.append(
-        el("div", "nb-editor-empty-icon", "📝"),
         el("p", "nb-empty", "왼쪽에서 노트를 고르거나, 위 「+ 새 노트」로 학습한 내용을 정리하세요.")
       );
       const add = el("button", "btn-primary", "+ 새 노트");
@@ -386,8 +397,8 @@
 
     const metaRow = el("div", "nb-meta-row");
     const sel = el("select", "nb-folder-select");
-    const optU = el("option", null, "📭 미분류"); optU.value = ""; sel.appendChild(optU);
-    S.folders.forEach((f) => { const o = el("option", null, "📁 " + (f.name || "")); o.value = f.id; sel.appendChild(o); });
+    const optU = el("option", null, "미분류"); optU.value = ""; sel.appendChild(optU);
+    S.folders.forEach((f) => { const o = el("option", null, (f.name || "(이름 없음)")); o.value = f.id; sel.appendChild(o); });
     sel.value = n.folderId || "";
     sel.onchange = () => { n.folderId = sel.value || null; saveNoteNow(); };
     const tagsInput = el("input", "nb-tags-input");
@@ -408,6 +419,7 @@
     const host = el("div", "nb-editor-tui");
     pane.appendChild(buildEditorTools(n));
     pane.appendChild(host);
+    updateModeButtons("wysiwyg");   // 시작 모드(문서) 기준으로 글머리 버튼 흐림 처리
     try {
       S.editor = new global.toastui.Editor({
         el: host,
@@ -504,7 +516,7 @@
     const close = el("button", "nb-close icon-btn", "← 닫기");
     close.type = "button"; close.onclick = () => global.Notebook.close();
     const search = el("input", "nb-search");
-    search.type = "search"; search.placeholder = "🔍 전체 검색";
+    search.type = "search"; search.placeholder = "전체 검색";
     let st = null;
     search.addEventListener("input", () => { clearTimeout(st); st = setTimeout(() => { S.query = search.value; S.tag = ""; render(); }, 150); });
     const newBtn = el("button", "nb-newnote btn-primary", "+ 새 노트");
