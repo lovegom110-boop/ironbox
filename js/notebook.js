@@ -50,6 +50,7 @@
   function changeEditorMode(mode) {
     if (!S.editor) return;
     editorHasUserChanges = false;
+    editorMode = mode;
     S.editor.changeMode(mode, true);
     updateModeButtons(mode);
     setTimeout(() => {
@@ -58,33 +59,44 @@
       editorHasUserChanges = false;
     }, 0);
   }
+  function isMarkdownSelection(selection) {
+    return Array.isArray(selection) && selection.length === 2
+      && selection.every((point) => Array.isArray(point) && point.length === 2
+        && Number.isInteger(point[0]) && Number.isInteger(point[1]));
+  }
   function applyLinePrefix(type, n) {
     if (!S.editor || !global.NotebookFormat) return;
-    changeEditorMode("markdown");
-    setTimeout(() => {
-      if (!S.editor || n.id !== S.noteId) return;
-      const result = global.NotebookFormat.toggleLinePrefix(S.editor.getMarkdown(), S.editor.getSelection(), type);
-      editorHasUserChanges = true;
-      mountedEditorBody = result.markdown;
-      n.body = result.markdown;
-      S.editor.setMarkdown(result.markdown, false);
-      S.editor.setSelection(result.selection[0], result.selection[1]);
-      saveNoteDebounced();
-    }, 0);
+    if (editorMode !== "markdown") {
+      changeEditorMode("markdown");
+      global.appToast && global.appToast("마크다운 모드에서 줄을 선택한 뒤 다시 눌러주세요");
+      return;
+    }
+    const selection = S.editor.getSelection();
+    if (!isMarkdownSelection(selection)) return;
+    const result = global.NotebookFormat.toggleLinePrefix(S.editor.getMarkdown(), selection, type);
+    editorHasUserChanges = true;
+    mountedEditorBody = result.markdown;
+    n.body = result.markdown;
+    S.editor.setMarkdown(result.markdown, false);
+    S.editor.setSelection(result.selection[0], result.selection[1]);
+    saveNoteDebounced();
   }
   function applyHeading(level, n) {
     if (!S.editor || !global.NotebookFormat) return;
-    changeEditorMode("markdown");
-    setTimeout(() => {
-      if (!S.editor || n.id !== S.noteId) return;
-      const result = global.NotebookFormat.toggleHeading(S.editor.getMarkdown(), S.editor.getSelection(), level);
+    if (editorMode === "wysiwyg") {
       editorHasUserChanges = true;
-      mountedEditorBody = result.markdown;
-      n.body = result.markdown;
-      S.editor.setMarkdown(result.markdown, false);
-      S.editor.setSelection(result.selection[0], result.selection[1]);
-      saveNoteDebounced();
-    }, 0);
+      S.editor.exec("heading", { level });
+      return;
+    }
+    const selection = S.editor.getSelection();
+    if (!isMarkdownSelection(selection)) return;
+    const result = global.NotebookFormat.toggleHeading(S.editor.getMarkdown(), selection, level);
+    editorHasUserChanges = true;
+    mountedEditorBody = result.markdown;
+    n.body = result.markdown;
+    S.editor.setMarkdown(result.markdown, false);
+    S.editor.setSelection(result.selection[0], result.selection[1]);
+    saveNoteDebounced();
   }
   function buildEditorTools(n) {
     const tools = el("div", "nb-editor-tools");
@@ -117,6 +129,7 @@
   };
   let saveTimer = null, saveTimerNoteId = null;
   let editorHasUserChanges = false;
+  let editorMode = "wysiwyg";
   let mountedNoteId = " ";   // 우측 편집기에 마운트된 노트 id (재생성 최소화용)
   let mountedEditorBody = ""; // Toast UI가 정규화한 마운트 직후 본문 (클릭만 한 변경 오인 방지)
 
@@ -324,6 +337,7 @@
     S.editor = null;
     mountedEditorBody = "";
     editorHasUserChanges = false;
+    editorMode = "wysiwyg";
     if (n && changed) {
       clearTimeout(saveTimer);
       saveTimer = null;
@@ -414,6 +428,7 @@
       });
       mountedEditorBody = S.editor.getMarkdown();
       editorHasUserChanges = false;
+      editorMode = "wysiwyg";
       const markEditorChangedByUser = () => { editorHasUserChanges = true; };
       host.addEventListener("beforeinput", markEditorChangedByUser, true);
       host.addEventListener("paste", markEditorChangedByUser, true);

@@ -80,5 +80,8 @@ assert.ok(
   notebook.includes('button.addEventListener("mousedown", (e) => e.preventDefault())'),
   "format buttons must preserve the editor selection before applying"
 );
+assert.ok(notebook.includes("isMarkdownSelection"), "custom formatting must reject WYSIWYG offset selections");
+assert.ok(notebook.includes('S.editor.exec("heading"'), "WYSIWYG heading shortcut must use the editor heading command");
+assert.ok(notebook.includes("let editorMode = \"wysiwyg\""), "editor mode must be tracked explicitly");
 
 console.log("ALL PASS (notebook transition + hosting excludes)");
