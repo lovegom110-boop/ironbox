@@ -46,6 +46,7 @@
     query: "", tag: "", editor: null, open: false
   };
   let saveTimer = null, saveTimerNoteId = null;
+  let editorHasUserChanges = false;
   let mountedNoteId = " ";   // 우측 편집기에 마운트된 노트 id (재생성 최소화용)
   let mountedEditorBody = ""; // Toast UI가 정규화한 마운트 직후 본문 (클릭만 한 변경 오인 방지)
 
@@ -252,6 +253,7 @@
     try { S.editor.destroy(); } catch (_) {}
     S.editor = null;
     mountedEditorBody = "";
+    editorHasUserChanges = false;
     if (n && changed) {
       clearTimeout(saveTimer);
       saveTimer = null;
@@ -339,8 +341,20 @@
         ]
       });
       mountedEditorBody = S.editor.getMarkdown();
+      editorHasUserChanges = false;
+      const markEditorChangedByUser = () => { editorHasUserChanges = true; };
+      host.addEventListener("beforeinput", markEditorChangedByUser, true);
+      host.addEventListener("paste", markEditorChangedByUser, true);
+      host.addEventListener("drop", markEditorChangedByUser, true);
+      host.addEventListener("click", (e) => {
+        if (e.target.closest("button")) markEditorChangedByUser();
+      }, true);
       S.editor.on("change", () => {
         const body = S.editor.getMarkdown();
+        if (!editorHasUserChanges) {
+          mountedEditorBody = body;
+          return;
+        }
         if (body === mountedEditorBody) return;
         mountedEditorBody = body;
         n.body = body;

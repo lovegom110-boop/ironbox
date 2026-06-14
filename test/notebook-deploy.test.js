@@ -57,4 +57,13 @@ for (const pattern of ["desktop/**", "test/**", "**/*.bat", "**/*.ps1", "**/*.ex
   assert.ok(ignore.includes(pattern), `Firebase Hosting에서 ${pattern} 제외 필요`);
 }
 
+assert.ok(
+  notebook.includes("if (!editorHasUserChanges)"),
+  "editor initialization normalization must not be saved as a user edit"
+);
+assert.ok(
+  notebook.includes('host.addEventListener("beforeinput", markEditorChangedByUser, true)'),
+  "real user body input must be detected"
+);
+
 console.log("ALL PASS (notebook transition + hosting excludes)");
