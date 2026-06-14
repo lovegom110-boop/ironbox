@@ -30,6 +30,12 @@
     if (d < 365) return Math.floor(d / 30) + "개월 전";
     return Math.floor(d / 365) + "년 전";
   }
+  function formatDateTime(ts) {
+    if (!ts) return "-";
+    const d = new Date(ts);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
   function parseTags(raw) {
     return Array.from(new Set(String(raw || "")
       .split(/[\s,]+/).map((t) => t.replace(/^#+/, "").trim()).filter(Boolean)));
@@ -39,11 +45,22 @@
     notes: [], folders: [], folderId: ALL, noteId: null,
     query: "", tag: "", editor: null, open: false
   };
-  let saveTimer = null;
+  let saveTimer = null, saveTimerNoteId = null;
   let mountedNoteId = " ";   // 우측 편집기에 마운트된 노트 id (재생성 최소화용)
+  let mountedEditorBody = ""; // Toast UI가 정규화한 마운트 직후 본문 (클릭만 한 변경 오인 방지)
 
   function root() { return document.getElementById("notes-view"); }
   function noteById(id) { return S.notes.find((n) => n.id === id) || null; }
+  function updateDateInfo(n) {
+    if (!n || n.id !== S.noteId) return;
+    const dates = root().querySelector(".nb-dates");
+    if (!dates) return;
+    dates.innerHTML = "";
+    dates.append(
+      el("span", null, "생성 " + formatDateTime(n.createdAt)),
+      el("span", null, "수정 " + formatDateTime(n.updatedAt))
+    );
+  }
 
   /* ---------------- 데이터 ---------------- */
   async function reload() {
@@ -53,14 +70,21 @@
   function saveNoteDebounced() {
     const n = noteById(S.noteId); if (!n) return;
     clearTimeout(saveTimer);
+    saveTimerNoteId = n.id;
     saveTimer = setTimeout(() => {
-      global.Store.saveNote(n).then(renderList).catch(() => global.appToast && global.appToast("저장 실패 — 변경이 반영되지 않았어요"));
+      saveTimer = null;
+      saveTimerNoteId = null;
+      global.Store.saveNote(n).then(() => { renderList(); updateDateInfo(n); })
+        .catch(() => global.appToast && global.appToast("저장 실패 — 변경이 반영되지 않았어요"));
     }, 500);
   }
   function saveNoteNow() {
     const n = noteById(S.noteId); if (!n) return Promise.resolve();
     clearTimeout(saveTimer);
-    return global.Store.saveNote(n).then(renderList).catch(() => global.appToast && global.appToast("저장 실패"));
+    saveTimer = null;
+    saveTimerNoteId = null;
+    return global.Store.saveNote(n).then(() => { renderList(); updateDateInfo(n); })
+      .catch(() => global.appToast && global.appToast("저장 실패"));
   }
   // 즐겨찾기 토글 (목록 별표·편집기 버튼 공용). 편집기 버튼·탭 카운트까지 동기화.
   function togglePin(n) {
@@ -70,7 +94,7 @@
       const pin = root().querySelector(".nb-pin");
       if (pin) { pin.classList.toggle("on", n.pinned); pin.textContent = n.pinned ? "⭐ 즐겨찾기" : "☆ 즐겨찾기"; }
     }
-    return global.Store.saveNote(n).then(() => { renderList(); renderTabs(); })
+    return global.Store.saveNote(n).then(() => { renderList(); renderTabs(); updateDateInfo(n); })
       .catch(() => global.appToast && global.appToast("저장 실패"));
   }
 
@@ -203,7 +227,7 @@
       star.title = n.pinned ? "즐겨찾기 해제" : "즐겨찾기에 추가";
       star.onclick = (e) => { e.stopPropagation(); togglePin(n); };
       top.appendChild(star);
-      item.append(top, el("div", "nb-item-meta", timeAgo(n.updatedAt)));
+      item.append(top, el("div", "nb-item-meta", "수정 " + timeAgo(n.updatedAt)));
       if ((n.tags || []).length) {
         const tl = el("div", "nb-item-tags");
         n.tags.slice(0, 4).forEach((t) => tl.appendChild(el("span", "nb-item-tag", "#" + t)));
@@ -218,10 +242,22 @@
   function destroyEditor() {
     if (!S.editor) return;
     const n = noteById(mountedNoteId);
-    try { if (n) n.body = S.editor.getMarkdown(); } catch (_) {}
+    let changed = !!n && saveTimerNoteId === n.id;
+    try {
+      if (n) {
+        const body = S.editor.getMarkdown();
+        if (body !== mountedEditorBody) { n.body = body; changed = true; }
+      }
+    } catch (_) {}
     try { S.editor.destroy(); } catch (_) {}
     S.editor = null;
-    if (n) global.Store.saveNote(n).catch(() => {});   // 노트 전환/닫기 시 마지막 내용 보존
+    mountedEditorBody = "";
+    if (n && changed) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+      saveTimerNoteId = null;
+      global.Store.saveNote(n).then(renderList).catch(() => {});
+    }
   }
   function renderEditor() {
     const pane = root().querySelector(".nb-editor");
@@ -255,8 +291,12 @@
     const titleInput = el("input", "nb-title-input");
     titleInput.type = "text"; titleInput.placeholder = "제목"; titleInput.value = n.title || "";
     titleInput.addEventListener("input", () => { n.title = titleInput.value; saveNoteDebounced(); });
-    titleInput.addEventListener("blur", () => { n.title = titleInput.value; saveNoteNow(); });
+    titleInput.addEventListener("blur", () => { if (saveTimerNoteId === n.id) saveNoteNow(); });
     pane.appendChild(titleInput);
+
+    const dates = el("div", "nb-dates");
+    pane.appendChild(dates);
+    updateDateInfo(n);
 
     const metaRow = el("div", "nb-meta-row");
     const sel = el("select", "nb-folder-select");
@@ -267,7 +307,13 @@
     const tagsInput = el("input", "nb-tags-input");
     tagsInput.type = "text"; tagsInput.placeholder = "#태그 (공백으로 구분)";
     tagsInput.value = (n.tags || []).map((t) => "#" + t).join(" ");
-    const commitTags = () => { n.tags = parseTags(tagsInput.value); tagsInput.value = n.tags.map((t) => "#" + t).join(" "); saveNoteNow(); };
+    const commitTags = () => {
+      const next = parseTags(tagsInput.value);
+      tagsInput.value = next.map((t) => "#" + t).join(" ");
+      if (next.join("\n") === n.tags.join("\n")) return;
+      n.tags = next;
+      saveNoteNow();
+    };
     tagsInput.addEventListener("blur", commitTags);
     tagsInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); commitTags(); } });
     metaRow.append(sel, tagsInput);
@@ -292,7 +338,14 @@
           ["code", "codeblock"]
         ]
       });
-      S.editor.on("change", () => { n.body = S.editor.getMarkdown(); saveNoteDebounced(); });
+      mountedEditorBody = S.editor.getMarkdown();
+      S.editor.on("change", () => {
+        const body = S.editor.getMarkdown();
+        if (body === mountedEditorBody) return;
+        mountedEditorBody = body;
+        n.body = body;
+        saveNoteDebounced();
+      });
     } catch (e) {
       console.error("에디터 생성 실패:", e);
       host.appendChild(el("p", "nb-empty", "에디터를 불러오지 못했어요. 새로고침해 주세요."));

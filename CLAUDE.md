@@ -24,6 +24,14 @@ js/lib/{easymde, marked, purify}  — 노트 마크다운(self-host)
 
 > 날짜는 `YYYY-MM-DD` 한국 시각. 수정 시마다 위에서부터 새로 추가.
 
+## 2026-06-14
+
+### Changed
+- **노트장 생성일·수정일 표시** — 왼쪽 목록에는 `수정 n분 전`, 오른쪽 편집 화면에는 `생성 YYYY.MM.DD HH:mm · 수정 YYYY.MM.DD HH:mm`을 표시하고 저장 직후 수정 시각도 갱신. (`js/notebook.js`, `css/style.css`)
+
+### Fixed
+- **노트를 클릭하기만 해도 최신 수정으로 처리되어 목록 위치가 바뀌던 문제** — 노트 전환·닫기 시 에디터 본문이 실제로 달라졌거나 해당 노트에 저장 대기 변경이 있을 때만 Firestore에 저장. Toast UI의 마크다운 정규화 결과는 마운트 직후 기준값과 비교해 클릭을 편집으로 오인하지 않으며, 제목·태그도 실제 변경 시에만 저장. 노트별 디바운스 대상을 추적해 빠른 전환 시 데이터 소실과 오저장도 방지. 회귀 테스트 추가, SW v33→v34. (`js/notebook.js`, `test/notebook-deploy.test.js`, `sw.js`)
+
 ## 2026-06-09
 
 ### Added
