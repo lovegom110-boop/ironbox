@@ -26,6 +26,10 @@ js/lib/{easymde, marked, purify}  — 노트 마크다운(self-host)
 
 ## 2026-06-14
 
+### Changed (노트장 = 문서 전용으로 단순화)
+- **마크다운 모드·분할 화면 제거** — 노트장을 **문서(WYSIWYG) 한 화면 전용**으로 정리. 문서/마크다운 모드 토글, 마크다운 편집 시의 좌(원문)·우(미리보기) **분할 화면**, 커스텀 줄 글머리(`• 1. 1) 가. ①`)와 `?` 단축키 안내 버튼을 모두 제거 — "글 쓰면 바로 보이는" 단일 편집 화면(저장은 변함없이 마크다운). 기본 글머리/번호·제목·표·체크리스트 등은 Toast UI 자체 툴바로 충분하고, **헤딩 단축키 `Ctrl+Shift+1~6`는 그대로 유지**(`exec("heading")`). 한국식 번호 `1) 가. ①`는 미사용이라 정리. 결정 배경: 분할 화면이 같은 글을 두 번 보여줘 혼란스럽고, 단축키는 문서 모드에서도 이미 동작.
+- **죽은 코드·자산 제거** — `js/notebook-format.js`(+ `test/notebook-format.test.js`) 삭제, `index.html`·`sw.js` 로딩 참조 제거, `notebook.js`의 모드/글머리 함수(`buildEditorTools`·`changeEditorMode`·`updateModeButtons`·`applyLinePrefix`·`isMarkdownSelection`·`editorMode`) 정리. 직전 디자인 폴리시에서 넣었던 커스텀 툴바/dim/help CSS도 함께 제거(불필요해짐). `notebook-deploy.test.js`를 새 설계(WYSIWYG 전용 + 역단언)로 갱신. SW 캐시 `v40 → v41`. (`js/notebook.js`, `css/style.css`, `index.html`, `sw.js`, `test/notebook-deploy.test.js`)
+
 ### Design (노트장 디자인 폴리시 — 4건)
 - **[버그] 서식 툴바 hover 무반응** — `.nb-tool-btn:hover`가 미정의 변수 `--bg-2`를 참조해 강조가 안 뜨던 문제 → `--bg-soft`로 교체. (`css/style.css`)
 - **Toast UI 에디터 테마 정합(폰트+삼성블루)** — 임베드된 Toast UI Editor가 자체 기본 스킨(Open Sans·청록 액센트 `#4b96e6`/`#00a9ff`·분홍 코드)을 그대로 노출해 "다른 앱" 느낌이던 것을 디자인 토큰으로 오버라이드. 본문/제목 폰트 **Pretendard**(inherit), 링크·코드·팝업 확인버튼·활성탭 액센트 **삼성블루 `#1428A0`**, 코드/코드블록 배경 `--bg-soft`, 헤딩 보더·인용 색 톤다운. 모두 `.nb-editor-tui` 스코프(앱 영향 격리). 셀렉터는 self-host CSS에서 실제 확인 후 작성. (`css/style.css`)

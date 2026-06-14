@@ -67,21 +67,17 @@ assert.ok(
   notebook.includes('host.addEventListener("beforeinput", markEditorChangedByUser, true)'),
   "real user body input must be detected"
 );
-assert.ok(notebook.includes("buildEditorTools"), "editor mode and line prefix controls must exist");
-assert.ok(notebook.includes('changeEditorMode("markdown")'), "custom prefixes must switch to markdown mode");
-assert.ok(notebook.includes("NotebookFormat.toggleLinePrefix"), "line prefix controls must support toggle removal");
-assert.ok(index.includes('src="js/notebook-format.js"'), "line prefix formatter must load before notebook");
-assert.ok(serviceWorker.includes('"./js/notebook-format.js"'), "line prefix formatter must be available offline");
+// 노트장은 문서(WYSIWYG) 전용 — 마크다운 모드·분할 화면·줄 글머리 도구를 제거함
+assert.ok(notebook.includes('initialEditType: "wysiwyg"'), "에디터는 문서(WYSIWYG)로 시작해야 함");
+assert.ok(notebook.includes("hideModeSwitch: true"), "내장 모드 전환 UI는 숨겨야 함");
+assert.ok(!notebook.includes("changeMode"), "마크다운 모드 전환은 없어야 함(분할 화면 제거)");
+assert.ok(!notebook.includes("NotebookFormat"), "줄 글머리 포매터 의존은 제거되어야 함");
+assert.ok(!notebook.includes("buildEditorTools"), "커스텀 서식 툴바는 제거되어야 함");
+assert.ok(!index.includes("notebook-format.js"), "index.html에서 notebook-format.js 로딩이 제거되어야 함");
+assert.ok(!serviceWorker.includes("notebook-format"), "SW 셸에서 notebook-format 참조가 제거되어야 함");
+// 헤딩 단축키(Ctrl+Shift+1~6)는 WYSIWYG에서 그대로 동작해야 함
 assert.ok(notebook.includes('/^Digit[0-6]$/'), "heading shortcut must use physical digit keys");
 assert.ok(notebook.includes("e.ctrlKey && e.shiftKey"), "heading shortcut must require Ctrl and Shift");
-assert.ok(notebook.includes("NotebookFormat.toggleHeading"), "heading shortcut must support apply and toggle removal");
-assert.ok(notebook.includes("Ctrl+Shift+1~6"), "heading shortcut help must be visible in the editor");
-assert.ok(
-  notebook.includes('button.addEventListener("mousedown", (e) => e.preventDefault())'),
-  "format buttons must preserve the editor selection before applying"
-);
-assert.ok(notebook.includes("isMarkdownSelection"), "custom formatting must reject WYSIWYG offset selections");
 assert.ok(notebook.includes('S.editor.exec("heading"'), "WYSIWYG heading shortcut must use the editor heading command");
-assert.ok(notebook.includes("let editorMode = \"wysiwyg\""), "editor mode must be tracked explicitly");
 
 console.log("ALL PASS (notebook transition + hosting excludes)");

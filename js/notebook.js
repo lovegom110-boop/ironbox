@@ -40,99 +40,11 @@
     return Array.from(new Set(String(raw || "")
       .split(/[\s,]+/).map((t) => t.replace(/^#+/, "").trim()).filter(Boolean)));
   }
-  function updateModeButtons(mode) {
-    const tools = root().querySelector(".nb-editor-tools");
-    if (!tools) return;
-    tools.querySelectorAll("[data-editor-mode]").forEach((button) => {
-      button.classList.toggle("active", button.dataset.editorMode === mode);
-    });
-    // 글머리 버튼은 마크다운 모드 전용 — 문서(WYSIWYG) 모드에선 흐리게 + 안내 툴팁
-    const mdOnly = mode !== "markdown";
-    tools.querySelectorAll(".nb-prefix-btn").forEach((button) => {
-      button.classList.toggle("nb-tool-dim", mdOnly);
-      button.title = mdOnly
-        ? "마크다운 모드 전용 · 누르면 마크다운 모드로 전환됩니다"
-        : (button.dataset.prefixTitle || "");
-    });
-  }
-  function changeEditorMode(mode) {
+  // 헤딩 단축키 (Ctrl+Shift+1~6 = H1~H6, Ctrl+Shift+0 = 일반 문단) — 문서(WYSIWYG) 전용
+  function applyHeading(level) {
     if (!S.editor) return;
-    editorHasUserChanges = false;
-    editorMode = mode;
-    S.editor.changeMode(mode, true);
-    updateModeButtons(mode);
-    setTimeout(() => {
-      if (!S.editor) return;
-      mountedEditorBody = S.editor.getMarkdown();
-      editorHasUserChanges = false;
-    }, 0);
-  }
-  function isMarkdownSelection(selection) {
-    return Array.isArray(selection) && selection.length === 2
-      && selection.every((point) => Array.isArray(point) && point.length === 2
-        && Number.isInteger(point[0]) && Number.isInteger(point[1]));
-  }
-  function applyLinePrefix(type, n) {
-    if (!S.editor || !global.NotebookFormat) return;
-    if (editorMode !== "markdown") {
-      changeEditorMode("markdown");
-      global.appToast && global.appToast("마크다운 모드에서 줄을 선택한 뒤 다시 눌러주세요");
-      return;
-    }
-    const selection = S.editor.getSelection();
-    if (!isMarkdownSelection(selection)) return;
-    const result = global.NotebookFormat.toggleLinePrefix(S.editor.getMarkdown(), selection, type);
     editorHasUserChanges = true;
-    mountedEditorBody = result.markdown;
-    n.body = result.markdown;
-    S.editor.setMarkdown(result.markdown, false);
-    S.editor.setSelection(result.selection[0], result.selection[1]);
-    saveNoteDebounced();
-  }
-  function applyHeading(level, n) {
-    if (!S.editor || !global.NotebookFormat) return;
-    if (editorMode === "wysiwyg") {
-      editorHasUserChanges = true;
-      S.editor.exec("heading", { level });
-      return;
-    }
-    const selection = S.editor.getSelection();
-    if (!isMarkdownSelection(selection)) return;
-    const result = global.NotebookFormat.toggleHeading(S.editor.getMarkdown(), selection, level);
-    editorHasUserChanges = true;
-    mountedEditorBody = result.markdown;
-    n.body = result.markdown;
-    S.editor.setMarkdown(result.markdown, false);
-    S.editor.setSelection(result.selection[0], result.selection[1]);
-    saveNoteDebounced();
-  }
-  function buildEditorTools(n) {
-    const tools = el("div", "nb-editor-tools");
-    const modes = el("div", "nb-tool-group");
-    [["wysiwyg", "문서"], ["markdown", "마크다운"]].forEach(([mode, label]) => {
-      const button = el("button", "nb-tool-btn" + (mode === "wysiwyg" ? " active" : ""), label);
-      button.type = "button";
-      button.dataset.editorMode = mode;
-      button.addEventListener("mousedown", (e) => e.preventDefault());
-      button.onclick = () => changeEditorMode(mode);
-      modes.appendChild(button);
-    });
-    const prefixes = el("div", "nb-tool-group");
-    [["bullet", "•"], ["decimal", "1."], ["paren", "1)"], ["korean", "가."], ["circle", "①"]].forEach(([type, label]) => {
-      const button = el("button", "nb-tool-btn nb-prefix-btn", label);
-      button.type = "button";
-      button.dataset.prefixTitle = label + " 글머리 적용 · 다시 누르면 해제";
-      button.title = button.dataset.prefixTitle;
-      button.addEventListener("mousedown", (e) => e.preventDefault());
-      button.onclick = () => applyLinePrefix(type, n);
-      prefixes.appendChild(button);
-    });
-    const help = el("button", "nb-tool-btn nb-help-btn", "?");
-    help.type = "button";
-    help.title = "단축키 — Ctrl+Shift+1~6: H1~H6 (다시 누르면 해제) · Ctrl+Shift+0: 일반 문단\n글머리(• 1. 1) 가. ①): 마크다운 모드에서 줄을 선택한 뒤 누르세요";
-    help.addEventListener("mousedown", (e) => e.preventDefault());
-    tools.append(modes, prefixes, help);
-    return tools;
+    S.editor.exec("heading", { level });
   }
 
   const S = {
@@ -141,7 +53,6 @@
   };
   let saveTimer = null, saveTimerNoteId = null;
   let editorHasUserChanges = false;
-  let editorMode = "wysiwyg";
   let mountedNoteId = " ";   // 우측 편집기에 마운트된 노트 id (재생성 최소화용)
   let mountedEditorBody = ""; // Toast UI가 정규화한 마운트 직후 본문 (클릭만 한 변경 오인 방지)
 
@@ -349,7 +260,6 @@
     S.editor = null;
     mountedEditorBody = "";
     editorHasUserChanges = false;
-    editorMode = "wysiwyg";
     if (n && changed) {
       clearTimeout(saveTimer);
       saveTimer = null;
@@ -417,16 +327,13 @@
     pane.appendChild(metaRow);
 
     const host = el("div", "nb-editor-tui");
-    pane.appendChild(buildEditorTools(n));
     pane.appendChild(host);
-    updateModeButtons("wysiwyg");   // 시작 모드(문서) 기준으로 글머리 버튼 흐림 처리
     try {
       S.editor = new global.toastui.Editor({
         el: host,
         height: "100%",
         initialEditType: "wysiwyg",
         hideModeSwitch: true,
-        previewStyle: "vertical",
         initialValue: n.body || "",
         usageStatistics: false,
         autofocus: false,
@@ -440,7 +347,6 @@
       });
       mountedEditorBody = S.editor.getMarkdown();
       editorHasUserChanges = false;
-      editorMode = "wysiwyg";
       const markEditorChangedByUser = () => { editorHasUserChanges = true; };
       host.addEventListener("beforeinput", markEditorChangedByUser, true);
       host.addEventListener("paste", markEditorChangedByUser, true);
@@ -449,7 +355,7 @@
         if (!(e.ctrlKey && e.shiftKey) || !/^Digit[0-6]$/.test(e.code)) return;
         e.preventDefault();
         e.stopPropagation();
-        applyHeading(Number(e.code.slice(-1)), n);
+        applyHeading(Number(e.code.slice(-1)));
       }, true);
       host.addEventListener("click", (e) => {
         if (e.target.closest("button")) markEditorChangedByUser();
