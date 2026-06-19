@@ -310,6 +310,41 @@
     document.body.appendChild(overlay);
   }
 
+  // 보이는 서식 그대로 인쇄 / PDF — 앱 공통 안전 렌더(marked→DOMPurify)로 다시 그려
+  // 화면 속 숨은 #nb-print 영역에 담고, @media print가 이 영역만 흰 종이로 출력한다.
+  // PDF는 인쇄창에서 "PDF로 저장"을 고르면 됨(추가 라이브러리 없음, 오프라인 안전).
+  function printNote(n) {
+    if (!n) return;
+    const host = document.getElementById("nb-print");
+    if (!host) { window.print(); return; }   // 영역이 없으면 그냥 인쇄(안전 폴백)
+
+    const title = (n.title || "").trim() || "(제목 없음)";
+    const safe = (global.Notes && global.Notes.mdToSafeHtml)
+      ? global.Notes.mdToSafeHtml(currentMarkdown(n)) : "";
+
+    host.innerHTML = "";
+    host.append(
+      el("h1", "nb-print-title", title),
+      el("div", "nb-print-meta",
+        "생성 " + formatDateTime(n.createdAt) + "   ·   수정 " + formatDateTime(n.updatedAt))
+    );
+    const bodyBox = el("div", "nb-print-body");
+    bodyBox.innerHTML = safe;
+    bodyBox.querySelectorAll("a").forEach((a) => { a.target = "_blank"; a.rel = "noopener noreferrer"; });
+    host.appendChild(bodyBox);
+
+    // PDF 저장 시 기본 파일명이 노트 제목으로 뜨도록 문서 제목을 잠깐 바꿈
+    const prevTitle = document.title;
+    document.title = title;
+    const cleanup = () => {
+      document.title = prevTitle;
+      host.innerHTML = "";
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    setTimeout(() => { try { window.print(); } catch (_) { cleanup(); } }, 50);
+  }
+
   function renderEditor() {
     const pane = root().querySelector(".nb-editor");
     destroyEditor();
@@ -382,7 +417,11 @@
     dlBtn.type = "button"; dlBtn.title = "이 노트를 .md 파일로 내려받기";
     dlBtn.addEventListener("mousedown", (e) => e.preventDefault());
     dlBtn.onclick = () => downloadNote(n);
-    actions.append(viewBtn, dlBtn);
+    const printBtn = el("button", "nb-action-btn nb-print-btn", "🖨 인쇄 / PDF");
+    printBtn.type = "button"; printBtn.title = "보이는 서식 그대로 인쇄 · 인쇄창에서 'PDF로 저장' 선택";
+    printBtn.addEventListener("mousedown", (e) => e.preventDefault());
+    printBtn.onclick = () => printNote(n);
+    actions.append(viewBtn, dlBtn, printBtn);
     pane.appendChild(actions);
 
     try {

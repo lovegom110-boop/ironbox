@@ -210,6 +210,9 @@
   <input type="file" id="import-file" accept="application/json" hidden />
   <div id="toast" class="toast" hidden></div>
 
+  <!-- 인쇄 / PDF 전용 영역 — 평소엔 숨김, 인쇄할 때만 흰 종이로 출력 (notebook.js가 채움) -->
+  <div id="nb-print" aria-hidden="true"></div>
+
   <!-- Firebase compat SDK (CDN) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
