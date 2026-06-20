@@ -347,10 +347,6 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
 .nb-search{width:230px; max-width:38vw; border:1px solid var(--line); border-radius:999px; padding:9px 14px; font-size:14px; outline:none; background:var(--bg)}
 .nb-search:focus{border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-soft)}
 .nb-newnote{height:38px; white-space:nowrap}
-.nb-cornell-btn{height:38px; white-space:nowrap; border:1px solid var(--line); background:var(--bg); color:var(--ink-2); border-radius:999px; padding:0 14px; font-size:13.5px; font-weight:700; cursor:pointer}
-.nb-cornell-btn:hover{border-color:var(--blue); color:var(--blue)}
-.nb-empty-actions{display:flex; gap:10px; justify-content:center; flex-wrap:wrap}
-.nb-empty-actions .btn-primary,.nb-empty-actions .nb-cornell-btn{height:42px}
 
 /* 책갈피 탭 (분류) */
 .nb-tabs{flex:none; display:flex; align-items:flex-end; gap:3px; padding:8px 14px 0; overflow-x:auto; background:var(--bg-soft); border-bottom:1px solid var(--line)}
@@ -481,18 +477,6 @@ main{max-width:1060px; margin:0 auto; padding:28px 22px 80px; display:flex; flex
   #nb-print th,#nb-print td{border:1px solid #bbb; padding:4pt 7pt; text-align:left; vertical-align:top}
   #nb-print th{background:#f0f0f0; font-weight:700}
   #nb-print tr{break-inside:avoid}
-
-  /* 코넬(옥스퍼드) 3분할: 좌 핵심키워드 | 우 필기 / 하단 전체폭 요약 */
-  #nb-print.nb-print-oxford .nb-ox-grid{display:grid; grid-template-columns:30% 1fr;
-    grid-template-areas:"cue notes" "summary summary"; border:1.4pt solid #000}
-  #nb-print.nb-print-oxford .nb-ox-cue{grid-area:cue; border-right:1.4pt solid #000; padding:10pt 12pt; min-height:13cm}
-  #nb-print.nb-print-oxford .nb-ox-notes{grid-area:notes; padding:10pt 12pt; min-height:13cm}
-  #nb-print.nb-print-oxford .nb-ox-summary{grid-area:summary; border-top:1.4pt solid #000; padding:10pt 12pt; background:#fafafa}
-  #nb-print.nb-print-oxford .nb-ox-label{font-size:9pt; font-weight:800; letter-spacing:.03em; color:#666;
-    margin:0 0 6pt; padding-bottom:3pt; border-bottom:1px solid #ddd}
-  #nb-print.nb-print-oxford .nb-ox-cue .nb-ox-body{font-size:10.5pt; color:#222}
-  #nb-print.nb-print-oxford .nb-ox-body>:first-child{margin-top:0}
-  #nb-print.nb-print-oxford .nb-ox-body>:last-child{margin-bottom:0}
 }
 
 /* 노트장 — 모바일 1열 (목록 ↔ 편집 전환) */
