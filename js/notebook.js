@@ -40,6 +40,42 @@
     return Array.from(new Set(String(raw || "")
       .split(/[\s,]+/).map((t) => t.replace(/^#+/, "").trim()).filter(Boolean)));
   }
+  // 코넬(옥스퍼드)식 3분할 노트 스켈레톤 — 세 개의 ## 섹션 제목이 인쇄 시 3분할 판별 기준이 된다.
+  function cornellSkeleton() {
+    return [
+      "## 🔑 핵심 키워드 · 질문",
+      "",
+      "",
+      "## ✍️ 필기",
+      "",
+      "",
+      "## 📌 요약",
+      "",
+      ""
+    ].join("\n");
+  }
+  // 마크다운을 ## 헤딩 기준으로 나눠, 코넬 3섹션(키워드/필기/요약)이 모두 있으면 {cue,notes,summary} 반환.
+  // 하나라도 없으면 null → 인쇄는 기존 전체폭 출력으로 폴백한다(일반 노트는 영향 없음).
+  function cornellSections(md) {
+    const lines = String(md || "").split(/\r?\n/);
+    const sections = [];
+    let cur = null;
+    for (const line of lines) {
+      const m = /^##\s+(.+?)\s*$/.exec(line);
+      if (m) { cur = { heading: m[1], body: [] }; sections.push(cur); }
+      else if (cur) cur.body.push(line);
+    }
+    if (sections.length < 3) return null;
+    const pick = (re) => {
+      const s = sections.find((x) => re.test(x.heading));
+      return s ? s.body.join("\n").trim() : null;
+    };
+    const cue = pick(/키워드|질문|단서|cue/i);
+    const notes = pick(/필기|본문|노트|notes/i);
+    const summary = pick(/요약|summary/i);
+    if (cue == null || notes == null || summary == null) return null;
+    return { cue, notes, summary };
+  }
   // 헤딩 단축키 (Ctrl+Shift+1~6 = H1~H6, Ctrl+Shift+0 = 일반 문단) — 문서(WYSIWYG) 전용
   function applyHeading(level) {
     if (!S.editor) return;
@@ -318,20 +354,45 @@
     const host = document.getElementById("nb-print");
     if (!host) { window.print(); return; }   // 영역이 없으면 그냥 인쇄(안전 폴백)
 
+    const md = currentMarkdown(n);
     const title = (n.title || "").trim() || "(제목 없음)";
-    const safe = (global.Notes && global.Notes.mdToSafeHtml)
-      ? global.Notes.mdToSafeHtml(currentMarkdown(n)) : "";
+    const toHtml = (s) => (global.Notes && global.Notes.mdToSafeHtml) ? global.Notes.mdToSafeHtml(s) : "";
+    const openLinks = (box) => box.querySelectorAll("a").forEach((a) => { a.target = "_blank"; a.rel = "noopener noreferrer"; });
 
     host.innerHTML = "";
+    host.classList.remove("nb-print-oxford");
     host.append(
       el("h1", "nb-print-title", title),
       el("div", "nb-print-meta",
         "생성 " + formatDateTime(n.createdAt) + "   ·   수정 " + formatDateTime(n.updatedAt))
     );
-    const bodyBox = el("div", "nb-print-body");
-    bodyBox.innerHTML = safe;
-    bodyBox.querySelectorAll("a").forEach((a) => { a.target = "_blank"; a.rel = "noopener noreferrer"; });
-    host.appendChild(bodyBox);
+
+    const cornell = cornellSections(md);
+    if (cornell) {
+      // 코넬 3분할: 좌(키워드) | 우(필기) / 하단 전체폭(요약)
+      host.classList.add("nb-print-oxford");
+      const cell = (cls, label, mdText) => {
+        const box = el("div", cls);
+        box.appendChild(el("div", "nb-ox-label", label));
+        const body = el("div", "nb-ox-body");
+        body.innerHTML = toHtml(mdText);
+        openLinks(body);
+        box.appendChild(body);
+        return box;
+      };
+      const grid = el("div", "nb-ox-grid");
+      grid.append(
+        cell("nb-ox-cue", "핵심 키워드 · 질문", cornell.cue),
+        cell("nb-ox-notes", "필기", cornell.notes),
+        cell("nb-ox-summary", "요약", cornell.summary)
+      );
+      host.appendChild(grid);
+    } else {
+      const bodyBox = el("div", "nb-print-body");
+      bodyBox.innerHTML = toHtml(md);
+      openLinks(bodyBox);
+      host.appendChild(bodyBox);
+    }
 
     // PDF 저장 시 기본 파일명이 노트 제목으로 뜨도록 문서 제목을 잠깐 바꿈
     const prevTitle = document.title;
@@ -339,6 +400,7 @@
     const cleanup = () => {
       document.title = prevTitle;
       host.innerHTML = "";
+      host.classList.remove("nb-print-oxford");
       window.removeEventListener("afterprint", cleanup);
     };
     window.addEventListener("afterprint", cleanup);
@@ -353,11 +415,17 @@
     if (!n) {
       const empty = el("div", "nb-editor-empty");
       empty.append(
-        el("p", "nb-empty", "왼쪽에서 노트를 고르거나, 위 「+ 새 노트」로 학습한 내용을 정리하세요.")
+        el("p", "nb-empty", "왼쪽에서 노트를 고르거나, 아래에서 새 노트를 만들어 정리하세요.")
       );
+      const acts = el("div", "nb-empty-actions");
       const add = el("button", "btn-primary", "+ 새 노트");
       add.type = "button"; add.onclick = createNote;
-      empty.appendChild(add);
+      const addCornell = el("button", "nb-cornell-btn", "📐 코넬노트");
+      addCornell.type = "button";
+      addCornell.title = "코넬식 3분할(핵심 키워드·필기·요약) 노트 만들기";
+      addCornell.onclick = createCornellNote;
+      acts.append(add, addCornell);
+      empty.appendChild(acts);
       pane.appendChild(empty);
       return;
     }
@@ -500,14 +568,19 @@
     const ti = root().querySelector(".nb-title-input");
     if (ti && !((noteById(id) || {}).title || "").trim()) setTimeout(() => ti.focus(), 30);
   }
-  function createNote() {
+  // 새 노트 생성 (body가 있으면 그 내용으로 시작). createNote는 onclick에 직접 묶이므로
+  // 인자(이벤트 객체)를 받지 않는다 — body 주입은 makeNote로 분리한다.
+  function makeNote(body) {
     const fid = (S.folderId === ALL || S.folderId === FAV || S.folderId === UNFILED) ? null : S.folderId;
     const n = global.Store.newStandaloneNote(fid);
+    if (body) n.body = body;
     S.notes.push(n);
     global.Store.saveNote(n).catch(() => {});
     openNote(n.id);
     renderTabs();
   }
+  function createNote() { makeNote(""); }
+  function createCornellNote() { makeNote(cornellSkeleton()); }
   function deleteNote(id) {
     if (!confirm("이 노트를 삭제할까요?")) return;
     global.Store.deleteNote(id).then(() => {
@@ -530,9 +603,13 @@
     search.type = "search"; search.placeholder = "전체 검색";
     let st = null;
     search.addEventListener("input", () => { clearTimeout(st); st = setTimeout(() => { S.query = search.value; S.tag = ""; render(); }, 150); });
+    const cornellBtn = el("button", "nb-cornell-btn", "📐 코넬노트");
+    cornellBtn.type = "button";
+    cornellBtn.title = "코넬식 3분할(핵심 키워드·필기·요약) 노트 만들기";
+    cornellBtn.onclick = createCornellNote;
     const newBtn = el("button", "nb-newnote btn-primary", "+ 새 노트");
     newBtn.type = "button"; newBtn.onclick = createNote;
-    top.append(close, el("span", "nb-brand", "노트"), el("span", "nb-topbar-spacer"), search, newBtn);
+    top.append(close, el("span", "nb-brand", "노트"), el("span", "nb-topbar-spacer"), search, cornellBtn, newBtn);
     v.appendChild(top);
 
     v.appendChild(el("div", "nb-tabs"));
