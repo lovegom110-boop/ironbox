@@ -18,12 +18,25 @@
     return h % 4;
   }
 
+  // marked 설정 1회 적용:
+  //  - 목록 파싱 비활성화: "2025. 10. ..." 처럼 '숫자.+공백'으로 시작하는 줄을 마크다운이
+  //    순서목록으로 보고 번호를 자동 재계산해 입력값(2025,2025,2026…)이 표시값(2025,2026,2027…)과
+  //    달라지던 데이터 손상 방지. 굵게/기울임/제목/링크/인용 등 다른 서식은 그대로 유지.
+  let _markedReady = false;
+  function ensureMarked() {
+    if (_markedReady) return;
+    try { if (global.marked && global.marked.use) global.marked.use({ tokenizer: { list() { return undefined; } } }); } catch (_) {}
+    _markedReady = true;
+  }
+
   const Notes = {
-    // 마크다운 → 살균된 HTML (XSS 차단)
+    // 마크다운 → 살균된 HTML (XSS 차단). breaks:true=단일 줄바꿈(\n)을 <br>로 보존.
     mdToSafeHtml(md) {
+      ensureMarked();
       let html = md || "";
+      const opts = { breaks: true, gfm: true };
       try {
-        if (global.marked) html = (global.marked.parse ? global.marked.parse(md || "") : global.marked(md || ""));
+        if (global.marked) html = (global.marked.parse ? global.marked.parse(md || "", opts) : global.marked(md || "", opts));
       } catch (_) { html = (md || ""); }
       if (global.DOMPurify) html = global.DOMPurify.sanitize(html);
       return html;
